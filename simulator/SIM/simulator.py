@@ -9,56 +9,65 @@ Input: Fleet package, ATC_class package, Map package
 
 #import packages
 from Fleet import *
-from ATC_class import *
+from ATC_class import ATC
 from Map import *
+from Dijkstra_class import *
 
 #import python modules
 from numpy import *
-import random
 from math import *
 import pygame as pg
 
+#import data
+from data_import import wpl_database
+
 def simrun(max_number,t_sim,area,dt,Map):
     #initializing values
-    listnumber = 0
-    idnumber = 0
+#    listnumber = 0
+#    idnumber = 0
     t = 0
-    efficiency = []
-    planes = []
-    angles = []
-    nr_LOS = 0
+#    nr_LOS = 0
+#    efficiency = []
+#    angles = []
+#    planes = []
+    ATC_list = []
     running = True
-    #creating the radius of the airspace
-    r = int(1000.0 * np.sqrt(area/np.pi))    
-
-    if Map == 'on':
-        reso, scr, scrrect, plane_pic, piclist = map_initialization()
-
-    #initializing
-    create_orig_aircraft(max_number, idnumber, listnumber,planes, r)   
+    r = int(1000.0 * np.sqrt(area/np.pi))   #creating the radius of the airspace
+    v_max = 30*0.5144
     
+    #initiating the simulator
+    if Map == True:
+        reso, scr, scrrect, plane_pic, piclist, X_waypoint, Y_waypoint = map_initialization(wp_database)
+    # create ATC for each waypoint
+    for i in xrange(len(wp_database)):
+        ATC_linkpare = [elem for elem in wpl_database if int(elem[0]) == i] #makes a list of all links for this ATC
+        ATC_link = [int(x[1]) for x in ATC_linkpare] # makes a list of all possible destination waypoints
+        ATC_list.append(ATC(wp_database[i][0],ATC_link,[],int(wp_database[i][3]),float(wp_database[i][1]),float(wp_database[i][2])))
+    # initiate the Dijksta algorithm
+    dijk = initiate_dijkstra(v_max)
+    structure = dijk.edges
+#    visited, path = dijkstra(dijk,1)
+
     #simulator loop    
     while running == True:
-        #clock
-        t = t + dt
-        #check wether the plains have arrived at their destination
-        planes,idnumber,listnumber,instance = remove_planes(max_number,idnumber,listnumber,planes,r)
-        #If necessary, update the heading of each plane
-        calc_heading(planes)
-        #update the aicraft position
-        update_aircraft(dt,planes)
-        #detect wether collsions happened this timestep
-        planes,nr_LOS,angles = collision_detection(planes,dt,t,nr_LOS,angles)
-        
-        if Map == 'on':
-            running = map_running(reso,scr,scrrect,plane_pic,piclist,planes,rectlist,running,r)
+        create_aircraft(ATC_list,r,t,dt) #create new aircraft if nessecary
+
+        ATC_check(ATC_list,structure,dt,t,v_max) # check for new commands from the ATC
+        execute_commands(ATC_list,v_max,t,dt) # excecute all commands
+        update_aircraft(ATC_list,dt) #update the aicraft position
+#        planes,nr_LOS,angles = collision_detection(planes,dt,t,nr_LOS,angles) #detect wether collsions happened this timestep
+
+        if Map == True:
+            running = map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X_waypoint,Y_waypoint,wp_database)
         if t>= t_sim:
             running = False
-            
-    if Map == 'on':
+        
+        t = t + dt # update clock
+    if Map == True:
         pg.quit()
     
-    nr_CLOS = 0
-    nr_NMAC = 0
-    nr_MAC = 0 
-    return nr_LOS,nr_CLOS,nr_NMAC,nr_MAC,planes,angles
+#    nr_CLOS = 0
+#    nr_NMAC = 0
+#    nr_MAC = 0 
+#    return nr_LOS,nr_CLOS,nr_NMAC,nr_MAC,planes,angles
+    return

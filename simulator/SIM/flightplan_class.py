@@ -1,6 +1,6 @@
 '''
-Package: FLeet
-Module: Flightplan
+Package: fLeet
+Module: flightplan
 
 description: This module creates flightplans based on begin and end coordinates, taking into account airspace rules and waypoints
 
