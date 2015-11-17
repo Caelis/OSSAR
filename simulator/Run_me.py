@@ -23,7 +23,7 @@ from SIM.simulator import *
 Map = True              # Activate or deactivate the map
 max_number = [30]       # Number of aircraft:
 t_simulated = 3000      # simulation time [s]
-dt = 0.2            # timestep [s]
+dt = 0.2                # timestep [s]
 area = [50]             # airspace area
 #marge = 0.1            # stop criteria for accuracy purposes
 #Za = 1.96

@@ -15,11 +15,12 @@ Output:
 
 """
 class command:
-    def __init__(self, command_type, distance, value, commander, recipient, send_time, status):
+    def __init__(self, command_type, distance, value, commander, recipient, send_time, next_atc, status):
         self.type = command_type
         self.distance = distance
         self.value = value
         self.commander = commander
         self.recipient = recipient
         self.send_time = send_time
+        self.next_atc = next_atc
         self.status = status #send: 1, received: 2, ackowledged: 4, denied: 8, executed: 16

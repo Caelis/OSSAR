@@ -23,13 +23,8 @@ from data_import import wpl_database
 
 def simrun(max_number,t_sim,area,dt,Map):
     #initializing values
-#    listnumber = 0
-#    idnumber = 0
+    idnumber = 0
     t = 0
-#    nr_LOS = 0
-#    efficiency = []
-#    angles = []
-#    planes = []
     ATC_list = []
     running = True
     r = int(1000.0 * np.sqrt(area/np.pi))   #creating the radius of the airspace
@@ -45,12 +40,11 @@ def simrun(max_number,t_sim,area,dt,Map):
         ATC_list.append(ATC(wp_database[i][0],ATC_link,[],int(wp_database[i][3]),float(wp_database[i][1]),float(wp_database[i][2])))
     # initiate the Dijksta algorithm
     dijk = initiate_dijkstra(v_max)
-    structure = dijk.edges
-#    visited, path = dijkstra(dijk,1)
+    structure = dijk.edges #create a dictionary of the structure for the Dijkstra algorithm
 
     #simulator loop    
     while running == True:
-        create_aircraft(ATC_list,r,t,dt) #create new aircraft if nessecary
+        create_aircraft(idnumber,ATC_list,r,v_max,t,dt) #create new aircraft if nessecary
 
         ATC_check(ATC_list,structure,dt,t,v_max) # check for new commands from the ATC
         execute_commands(ATC_list,v_max,t,dt) # excecute all commands
