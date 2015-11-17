@@ -23,4 +23,4 @@ class command:
         self.recipient = recipient
         self.send_time = send_time
         self.next_atc = next_atc
-        self.status = status #send: 1, received: 2, ackowledged: 4, denied: 8, executed: 16
+        self.status = status #send: 1, received: 2, ackowledged: 4, denied: 8, replaced: 16, executed: 32

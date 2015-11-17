@@ -50,7 +50,7 @@ def ATC_check(ATC_list,dijk,dt,t,v_max):
 def execute_commands(ATC_list,v_max,t,dt):
     for atc in ATC_list:
         for plane in atc.locp:
-            plane.execute(v_max,dt)
+            plane.decision_making(ATC_list,v_max,dt)
             
 def update_aircraft(ATC_list,dt):
     for atc in ATC_list:
