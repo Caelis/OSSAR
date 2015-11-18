@@ -24,7 +24,7 @@ from data_import import data
 
 def create_aircraft(idnumber,ATC_list,r,v_max,t,dt): #creates aircraft when nessecary
     for i in xrange(len(ar_database)):               # add aircraft if needed
-        if int(ar_database[i][-1]) > (t - 0.5*dt) and int(ar_database[i][-1]) < (t + 0.5*dt):
+        if int(ar_database[i][-1]) >= (t - 0.5*dt) and int(ar_database[i][-1]) < (t + 0.5*dt):
             ATC_gate = int(rnd.choice(g_database))              # Random select a departure gate of the aircraft
             x1 = float(wp_database[ATC_gate][1])                # starting x-coordinate
             y1 = float(wp_database[ATC_gate][2])                # starting y-coordinate
