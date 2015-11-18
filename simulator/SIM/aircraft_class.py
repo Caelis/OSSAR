@@ -47,7 +47,7 @@ class aircraft:
     def decision_making(self,ATC_list,v_max,dt):
         self.collision_avoidence(ATC_list,v_max)    # check if there are any aircraft within seperation minimum
         self.check_newcommands(v_max,dt)            # check if new commands were given
-        print self.v
+        # print self.v
         if len(self.op) != 0:
             self.execute(v_max,dt)                      # execute given commands
         else:
