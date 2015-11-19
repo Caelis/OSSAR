@@ -38,41 +38,37 @@ class ATC:
     def create_commands(self, ATC_list,v_max,structure,dt,t):
         for plane in self.locp:  # check if each plane has a command
             if plane.op == []:
+                self.plan_operation(self.type,ATC_list, plane,structure,t)
                 if self.type == 1:  #check to which type of ATC the aircraft is assigned
-                    self.plan_operation(self.type,ATC_list, plane,structure,t)
                     self.plane_handoff(ATC_list,plane,t)
-                elif self.type == 2:
-                    self.plan_operation(self.type,ATC_list, plane,structure,t)
                 elif self.type == 4:
-                    self.plan_operation(self.type,ATC_list, plane,structure,t)
                     if sqrt((plane.x_pos - self.x_handoff)**2 + (plane.y_pos - self.y_handoff)**2) <= v_max*dt:
                         self.remove_plane(plane)
             elif sqrt((plane.x_pos - self.x_handoff)**2 + (plane.y_pos - self.y_handoff)**2) <= v_max*dt: #check wether the aircraft is within range of its next destination ((v_max*dt))
                 self.plane_handoff(ATC_list,plane,t)
 
     def plan_operation(self,atc_type,ATC_list,plane,structure,t):
-        # turn  = type 1 operation (o to 2 pi radian)
-        # change speed = type 2 operation
+        par = {}
+        command_type = 'heading'
         if atc_type == 1 or atc_type == 2:
             path = shortestpath(structure,self.id,plane.atc_goal) #give the current fastest route using Dijkstra algorithm
             next_atc = path[1] #selects the next atc
             new_heading = atan2((int(wp_database[int(next_atc)][2])-(self.y_handoff)), (int(wp_database[int(next_atc)][1])-(self.x_handoff))) #calculate the heading after the operation
             plane.heading = atan2((self.y_handoff-plane.y_pos), (self.x_handoff-plane.x_pos))
-            turn_angle = new_heading - plane.heading # calculate the turn angle
-            distance = hypot(plane.x_pos-self.x_handoff, plane.y_pos-self.y_handoff) #calculate at which distance the operation should be finished
-            command_type = 1
-            plane_command = command(command_type, distance, turn_angle, self.id, plane.id, t ,next_atc, 1) #1 = send
+            turn_angle = new_heading - plane.heading # calculate the turn angle         
         if atc_type == 4:      
             next_atc = self.id #selects the next atc
             new_heading = atan2((int(wp_database[int(next_atc)][2])-(self.y_handoff)), (int(wp_database[int(next_atc)][1])-(self.x_handoff))) #calculate the heading after the operation
             turn_angle = 0.5*pi # calculate the turn angle
-            distance = hypot(plane.x_pos-self.x_handoff, plane.y_pos-self.y_handoff) #calculate at which distance the operation should be finished
-            command_type = 1
-            plane_command = command(command_type, distance, turn_angle, self.id, plane.id, t ,next_atc, 1) #1 = send     
+        plane_command = command(command_type, self.id, plane.id, t, 1, par) #1 = send     
+        distance = hypot(plane.x_pos-self.x_handoff, plane.y_pos-self.y_handoff) #calculate at which distance the operation should be finished
+        par['next_atc'] = next_atc
+        par['turn_angle'] = turn_angle
+        par['distance'] = distance
         plane.op.append(plane_command)
         
     def plane_handoff(self,ATC_list,plane,t):
-        next_atc = plane.op[0].next_atc
+        next_atc = plane.op[0].par['next_atc']
         plane.op = []
         plane.update_atc(next_atc)
         plane.v_target = False
