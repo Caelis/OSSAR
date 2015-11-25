@@ -21,7 +21,7 @@ import pygame as pg
 #import data
 from data_import import wpl_database
 
-def simrun(max_number,t_sim,area,dt,Map):
+def simrun(t_sim,area,dt,Map):
     #initializing values
     idnumber = 0
     t = 0
@@ -35,9 +35,9 @@ def simrun(max_number,t_sim,area,dt,Map):
         reso, scr, scrrect, plane_pic, piclist, X_waypoint, Y_waypoint = map_initialization(wp_database)
     # create ATC for each waypoint
     for i in xrange(len(wp_database)):
-        ATC_linkpare = [elem for elem in wpl_database if int(elem[0]) == i] #makes a list of all links for this ATC
-        ATC_link = [int(x[1]) for x in ATC_linkpare] # makes a list of all possible destination waypoints
-        ATC_list.append(ATC(wp_database[i][0],ATC_link,[],int(wp_database[i][3]),float(wp_database[i][1]),float(wp_database[i][2])))
+        ATC_linkdes = [elem for elem in wpl_database if int(elem[0]) == i] #makes a list of all links away from this ATC
+        ATC_linkd = [int(x[1]) for x in ATC_linkdes] # makes a list of all possible destination waypoints
+        ATC_list.append(ATC(wp_database[i][0],ATC_linkd,[],int(wp_database[i][3]),float(wp_database[i][1]),float(wp_database[i][2])))
     # initiate the Dijksta algorithm
     dijk = initiate_dijkstra(v_max)
     structure = dijk.edges #create a dictionary of the structure for the Dijkstra algorithm
@@ -59,9 +59,6 @@ def simrun(max_number,t_sim,area,dt,Map):
         t = t + dt # update clock
     if Map == True:
         pg.quit()
-    
-#    nr_CLOS = 0
-#    nr_NMAC = 0
-#    nr_MAC = 0 
-#    return nr_LOS,nr_CLOS,nr_NMAC,nr_MAC,planes,angles
+
+#    return throughput,t_stop_total,v_average 
     return

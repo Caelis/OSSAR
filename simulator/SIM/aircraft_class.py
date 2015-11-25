@@ -72,7 +72,6 @@ class aircraft:
             for command in self.op:
                 if command.status == 1:
                     command.status = command.status + 2
-#                add function to check which command to excecute
                     self.process_command(command,v_max,dt)
         elif len(self.op) == 0: #whenever there are no commands, determine own speed and heading
             self.heading = self.update_heading()
@@ -154,10 +153,3 @@ class aircraft:
             self.update_heading()
         self.x_pos = self.x_pos + self.v * dt * cos(self.heading)
         self.y_pos = self.y_pos + self.v * dt * sin(self.heading)
-    
-#    def check_command(self,v_max,dt): ### not in use yet
-#        v_target, s_target = self.set_target(command,v_max,dt)
-#        if v_target >= self.v_limit:
-#            self.v_target = self.v_limit
-#        else:
-#            self.v_target = v_target

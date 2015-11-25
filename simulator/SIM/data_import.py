@@ -51,3 +51,7 @@ g_database = [elem[0] for elem in waypoint_gate]
 #make runway database
 waypoint_runway = [elem for elem in wp_database if int(elem[3]) == 4]
 rw_database = [elem[0] for elem in waypoint_runway]
+
+#calculate minimal decelaration
+deceleration_list = [elem[3] for elem in data]
+min_dec = min(deceleration_list) #determine the smallest deceleration of all taxiiing aircraft

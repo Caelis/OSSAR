@@ -40,12 +40,10 @@ def create_aircraft(idnumber,ATC_list,r,v_max,t,dt): #creates aircraft when ness
             new_plane = aircraft(idnumber,plane_type,speed,max_speed,max_acc,max_dcc,x1,y1,x1,y1,x2,y2,heading,ATC_gate,ATC_runway)
             ATC_list[ATC_gate].add_plane(new_plane)
             idnumber =  idnumber + 1
-#            planes[listnumber].flightplan = flightplan_ins.create_flightplan(listnumber+1,planes[listnumber].x_beg,planes[listnumber].y_beg,planes[listnumber].x_des,planes[listnumber].y_des,wp_database,r) #add a flightplan to the aircraft
-#            listnumber = listnumber + 1
 
 def ATC_check(ATC_list,dijk,dt,t,v_max):
     for atc in ATC_list:
-        atc.create_commands(ATC_list,v_max,dijk,dt,t)
+        atc.command_check(ATC_list,v_max,dijk,dt,t)
 
 def execute_commands(ATC_list,v_max,t,dt):
     for atc in ATC_list:

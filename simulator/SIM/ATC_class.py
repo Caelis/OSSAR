@@ -20,32 +20,38 @@ from command_class import *
 
 #import data
 from data_import import wp_database
+from data_import import min_dec #minimum deceleration
 #from collision_class import collision
 
 ##create instances
 #coll_ins = collision()
 
 class ATC:
-    
     def __init__(self, ATC_ID, ATClink, locplanes, ATCtype, x_handoff, y_handoff):
-        self.id = ATC_ID                #ATC identification number
-        self.link = ATClink             #Array of possible handover ATC
-        self.locp = locplanes           #Array of planes under command
-        self.type = ATCtype             #Type of ATC (gate(1), waypoint(2), end(4))
-        self.x_handoff = x_handoff      #x-coordinate at which a aircraft should be handed over
-        self.y_handoff = y_handoff      #y-coordinate at which a aircraft should be handed over
-        
-    def create_commands(self, ATC_list,v_max,structure,dt,t):
-        for plane in self.locp:  # check if each plane has a command
-            if plane.op == []:
-                self.plan_operation(self.type,ATC_list, plane,structure,t)
-                if self.type == 1:  #check to which type of ATC the aircraft is assigned
-                    self.plane_handoff(ATC_list,plane,t)
-                elif self.type == 4:
-                    if sqrt((plane.x_pos - self.x_handoff)**2 + (plane.y_pos - self.y_handoff)**2) <= v_max*dt:
-                        self.remove_plane(plane)
-            elif sqrt((plane.x_pos - self.x_handoff)**2 + (plane.y_pos - self.y_handoff)**2) <= v_max*dt: #check wether the aircraft is within range of its next destination ((v_max*dt))
+        self.id = ATC_ID                # ATC identification number
+        self.link = ATClink             # list of possible handover ATC
+        self.locp = locplanes           # Array of planes under command
+        self.type = ATCtype             # Type of ATC (gate(1), waypoint(2), end(4))
+        self.x_handoff = x_handoff      # x-coordinate at which a aircraft should be handed over
+        self.y_handoff = y_handoff      # y-coordinate at which a aircraft should be handed over
+        self.throughput = False         # thoughput of ATC
+    
+    #check if aplane needs a command
+    def command_check(self,ATC_list,v_max,structure,dt,t):
+        for plane in self.locp:
+            self.create_commands(plane,ATC_list,v_max,structure,dt,t)
+
+    #create commands for each plane if necessary
+    def create_commands(self,plane,ATC_list,v_max,structure,dt,t):
+        if plane.op == []:
+            self.plan_operation(self.type,ATC_list, plane,structure,t)
+            if self.type == 1:  #check to which type of ATC the aircraft is assigned
                 self.plane_handoff(ATC_list,plane,t)
+            elif self.type == 4:
+                if sqrt((plane.x_pos - self.x_handoff)**2 + (plane.y_pos - self.y_handoff)**2) <= v_max*dt:
+                    self.remove_plane(plane)
+        elif sqrt((plane.x_pos - self.x_handoff)**2 + (plane.y_pos - self.y_handoff)**2) <= v_max*dt: #check wether the aircraft is within range of its next destination ((v_max*dt))
+            self.plane_handoff(ATC_list,plane,t)
 
     def plan_operation(self,atc_type,ATC_list,plane,structure,t):
         par = {}
