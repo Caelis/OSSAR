@@ -40,29 +40,30 @@ class aircraft:
         self.y_des = Y2             #current y_coordinate of destination 
         self.flightplan = []
         self.col_list = []
-        self.atc = ATC_id
+        self.atc = [False, ATC_id]  #plane goes from self.atc[0] to self.atc[1]
         self.atc_goal = ATC_runway
         self.op = []
 
-    def decision_making(self,ATC_list,v_max,dt):
-        self.collision_avoidence(ATC_list,v_max)    # check if there are any aircraft within seperation minimum
+    def decision_making(self,ATC_list,separation,v_max,dt):
+        self.collision_avoidence(ATC_list,separation,v_max)    # check if there are any aircraft within seperation minimum
         self.check_newcommands(v_max,dt)            # check if new commands were given
-#        print self.v
         if len(self.op) != 0:
             self.execute(v_max,dt)                      # execute given commands
         else:
             self.check_speed(v_max,dt)
         
     #check if there are any aircraft at or within seperation minimum and if so, change the speed limit
-    def collision_avoidence(self,ATC_list,v_max):
-        min_seperation = 75 #minimal seperation [m] for taxiing aircraft
-        other_plane = [elem for elem in ATC_list[self.atc].locp if elem.id != self.id ]
+    def collision_avoidence(self,ATC_list,separation,v_max):
+        min_seperation = separation #minimal seperation [m] for taxiing aircraft
+        other_plane = [elem for elem in ATC_list[self.atc[1]].locp if elem.id != self.id ]
         if len(other_plane) != 0:
             for plane in other_plane:
                 plane_seperation = hypot((self.x_pos-plane.x_pos), (self.y_pos-plane.y_pos))
-                if plane_seperation < min_seperation:
-                    self.v_limit = plane.v
-                    self.v_target = self.v_limit
+                if plane_seperation < min_seperation: #check if seperation is lost
+                    heading_diff = atan2((plane.y_pos-self.y_pos),(plane.x_pos-self.x_pos))
+                    if (self.heading-0.1) < heading_diff < (self.heading + 0.1): #check wether the other aircraft is flying in front
+                        self.v_limit = plane.v
+                        self.v_target = self.v_limit
         else:
             self.v_limit = False
 
@@ -145,7 +146,8 @@ class aircraft:
 
     # update current atc    
     def update_atc(self,new_atc):
-        self.atc = new_atc
+        self.atc[0] = self.atc[1]
+        self.atc[1] = new_atc
 
     # Update positions using velocity and heading (heading is obtained from ATC)
     def update_pos(self,dt):                                           

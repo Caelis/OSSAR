@@ -10,6 +10,7 @@ Input: Fleet package, ATC_class package, Map package
 #import packages
 from Fleet import *
 from ATC_class import ATC
+from ATC_class import create_ATC
 from Map import *
 from Dijkstra_class import *
 
@@ -21,36 +22,49 @@ import pygame as pg
 #import data
 from data_import import wpl_database
 
-def simrun(t_sim,area,dt,Map):
+def simrun(t_sim,area,dt,Map,n_prop):
     #initializing values
     idnumber = 0
     t = 0
+    t_stop_total = 0
     ATC_list = []
+    plane_speed = [] 
+    throughput = 0
+    t_next_aircraft = 0    
     running = True
+    create = True
+
+    #properties    
     r = int(1000.0 * np.sqrt(area/np.pi))   #creating the radius of the airspace
     v_max = 30*0.5144
+    separation = 75
+    mean = 40 #mean of aircraft spawning time
+    std = 1 #standerd deviation of aircraft spawning time
     
     #initiating the simulator
     if Map == True:
         reso, scr, scrrect, plane_pic, piclist, X_waypoint, Y_waypoint = map_initialization(wp_database)
+        
     # create ATC for each waypoint
-    for i in xrange(len(wp_database)):
-        ATC_linkdes = [elem for elem in wpl_database if int(elem[0]) == i] #makes a list of all links away from this ATC
-        ATC_linkd = [int(x[1]) for x in ATC_linkdes] # makes a list of all possible destination waypoints
-        ATC_list.append(ATC(wp_database[i][0],ATC_linkd,[],int(wp_database[i][3]),float(wp_database[i][1]),float(wp_database[i][2])))
+    ATC_list = create_ATC(wp_database,ATC_list)
+    
     # initiate the Dijksta algorithm
-    dijk = initiate_dijkstra(v_max)
-    structure = dijk.edges #create a dictionary of the structure for the Dijkstra algorithm
+    structure_orig, struc_dist, struc_dens = initiate_dijkstra(v_max)
+    struc_dens0 = struc_dens.copy()
+    structure = structure_orig.copy()
 
     #simulator loop    
     while running == True:
-        create_aircraft(idnumber,ATC_list,r,v_max,t,dt) #create new aircraft if nessecary
-
+        #create new aircraft if nessecary
+        t_next_aircraft, create = aircraft_interval(t_next_aircraft,idnumber,ATC_list,r,v_max,create,mean,std,t,dt)
+        #create and execute commands
         ATC_check(ATC_list,structure,dt,t,v_max) # check for new commands from the ATC
-        execute_commands(ATC_list,v_max,t,dt) # excecute all commands
-        update_aircraft(ATC_list,dt) #update the aicraft position
-#        planes,nr_LOS,angles = collision_detection(planes,dt,t,nr_LOS,angles) #detect wether collsions happened this timestep
-
+        execute_commands(ATC_list,separation,v_max,t,dt) # excecute all commands
+        #update the aicraft position
+        t_stop_total,plane_speed = update_aircraft(ATC_list,plane_speed,t_stop_total,dt) 
+        #update Dijkstra structure
+#        structure = update_dijsktra(ATC_list,structure_orig,struc_dens0,struc_dist,separation,v_max)
+        #is True, run map
         if Map == True:
             running = map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X_waypoint,Y_waypoint,wp_database)
         if t>= t_sim:
@@ -59,6 +73,7 @@ def simrun(t_sim,area,dt,Map):
         t = t + dt # update clock
     if Map == True:
         pg.quit()
+    
+    v_average = sum(plane_speed)/len(plane_speed)
 
-#    return throughput,t_stop_total,v_average 
-    return
+    return throughput,t_stop_total,v_average 

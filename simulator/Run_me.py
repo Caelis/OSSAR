@@ -22,22 +22,21 @@ from SIM.simulator import *
 '''Configuring the simulator'''
 Map = True              # Activate or deactivate the map
 runs = 1                # number of runs 
-spawnrate = [10]        # rate at which aircraft are added
-n = [0]                 # degree of propagation
-t_simulated = 2500      # simulation time [s]
+spawnrate = [10]        # rate [aircraft/hour] at which aircraft are added
+n_prop = [0]            # degree of propagation
+t_simulated = 3600      # simulation time [s]
 dt = 0.02               # timestep [s]
 
 area = 50               # airspace area
 marge = 0.1             # stop criteria for accuracy purposes
 Za = 1.96               # stop criteria for accuracy purposes
 
-throughput = []         # measurements
-t_stop_total = []       # measurements
-v_average = []          # measurements
-
+throughput_list = []         # measurements
+t_stop_total_list = []       # measurements
+v_average_list = []          # measurements
 
 for i in range(len(spawnrate)):
-    for j in range(len(n)):
+    for j in range(len(n_prop)):
         n_runs = []
         
         #Looping
@@ -46,8 +45,12 @@ for i in range(len(spawnrate)):
 #        f = open("results_" + str(spawnrate[i]) +"_"+ str(n[j]) + "_"+str(Sim_type)+".txt","w")
 
         while looping == True:
-            simrun(t_simulated,area,dt,Map)
-#           throughput,t_stop_total,v_average = simrun(max_number[i],t_simulated,area[i],dt,Map)     
+#            simrun(t_simulated,area,dt,Map,n_prop)
+            throughput,t_stop_total,v_average = simrun(t_simulated,area,dt,Map,n_prop)     
+            throughput_list.append(throughput)
+            t_stop_total_list.append(t_stop_total)
+            v_average_list.append(v_average)
+            
             
             trial = trial + 1
             print "run",trial," finished..."
@@ -55,16 +58,16 @@ for i in range(len(spawnrate)):
             if trial == 1:   # this loop overwrites the next loop and is to make sure the simulator is only run once for testing purposes
                 looping = False # when this loop is removed, the simulator only stops when the stop criteria is reached or forced to stop
             
-            if len(throughput)>=100: # This loop determines when the simulator should stop running. 
-                average1 = np.mean(throughput)
-                average2 = np.mean(t_stop_total)
-                average3 = np.mean(v_average)
+            if len(v_average_list)>=100: # This loop determines when the simulator should stop running. 
+                average1 = np.mean(throughput_list)
+                average2 = np.mean(t_stop_total_list)
+                average3 = np.mean(v_average_list)
                 d1 = marge * average1
                 d2 = marge * average2
                 d3 = marge * average3
-                S1 = np.std(throughput)
-                S2 = np.std(t_stop_total)
-                S3 = np.std(v_average)
+                S1 = np.std(throughput_list)
+                S2 = np.std(t_stop_total_list)
+                S3 = np.std(v_average_list)
                 if 2 *Za * S1 /np.sqrt(trial) < d1 and 2 *Za * S2 /np.sqrt(trial) < d2 and 2 *Za * S3 /np.sqrt(trial) :
                     looping = False    
 #        f.close()

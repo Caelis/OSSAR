@@ -20,6 +20,7 @@ from command_class import *
 
 #import data
 from data_import import wp_database
+from data_import import wpl_database
 from data_import import min_dec #minimum deceleration
 #from collision_class import collision
 
@@ -36,7 +37,7 @@ class ATC:
         self.y_handoff = y_handoff      # y-coordinate at which a aircraft should be handed over
         self.throughput = False         # thoughput of ATC
     
-    #check if aplane needs a command
+    #check if a plane needs a command
     def command_check(self,ATC_list,v_max,structure,dt,t):
         for plane in self.locp:
             self.create_commands(plane,ATC_list,v_max,structure,dt,t)
@@ -91,3 +92,10 @@ class ATC:
 
     def add_plane(self,plane):
         self.locp.append(plane)
+
+def create_ATC(wp_database,ATC_list):
+    for i in xrange(len(wp_database)):
+        ATC_linkdes = [elem for elem in wpl_database if int(elem[0]) == i] #makes a list of all links away from this ATC
+        ATC_linkd = [int(x[1]) for x in ATC_linkdes] # makes a list of all possible destination waypoints
+        ATC_list.append(ATC(wp_database[i][0],ATC_linkd,[],int(wp_database[i][3]),float(wp_database[i][1]),float(wp_database[i][2])))
+    return ATC_list
