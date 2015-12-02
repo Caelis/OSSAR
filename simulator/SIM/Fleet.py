@@ -24,22 +24,27 @@ from data_import import rw_database
 from data_import import data
 
 #Uses a normal distribution to determine when the next aircaft will arrive
-def aircraft_interval(t_next_aircraft,idnumber,ATC_list,r,v_max,create,mean,std,t,dt):
+def aircraft_interval(t_next_aircraft,idnumber,ATC_list,runway_list,r,v_max,create,mean,std,t,dt):
     if create == True:
-        create_aircraft(idnumber,ATC_list,r,v_max,t,dt)
-        print "create"
+        idnumber = create_aircraft(idnumber,ATC_list,runway_list,r,v_max,t,dt)
         t_next_aircraft = t + np.random.normal(mean,std)
-        print t_next_aircraft
         create = False
     if create == False:
         if t_next_aircraft <= t:
             create = True
-    return t_next_aircraft,create
+    return t_next_aircraft,create,idnumber
 
-def create_aircraft(idnumber,ATC_list,r,v_max,t,dt): #creates aircraft when nessecary
+def create_aircraft(idnumber,ATC_list,runway_list,r,v_max,t,dt): #creates aircraft when nessecary
     ATC_gate = int(rnd.choice(g_database))              # Random select a departure gate of the aircraft
     x1 = float(wp_database[ATC_gate][1])                # starting x-coordinate
     y1 = float(wp_database[ATC_gate][2])                # starting y-coordinate
+#    runwayid = rnd.choice(runway_list).id             # Random select a runway entrance of the aircraft
+#    goal = []
+#    print runwayid
+#    for node in runway_list[runwayid].nodes:
+#        x_coor = wp_database[node][1]
+#        y_coor = wp_database[node][2]
+#        goal.append([x_coor,y_coor])
     ATC_runway = int(rnd.choice(rw_database))           # Random select a runway entrance of the aircraft
     x2 = float(wp_database[ATC_gate][1])                # goal x-coordinate
     y2 = float(wp_database[ATC_gate][2])                # goal y-coordinate
@@ -52,6 +57,7 @@ def create_aircraft(idnumber,ATC_list,r,v_max,t,dt): #creates aircraft when ness
     new_plane = aircraft(idnumber,plane_type,speed,max_speed,max_acc,max_dcc,x1,y1,x1,y1,x2,y2,heading,ATC_gate,ATC_runway)
     ATC_list[ATC_gate].add_plane(new_plane)
     idnumber =  idnumber + 1
+    return idnumber
 
 #def create_aircraft(idnumber,ATC_list,r,v_max,t,dt): #creates aircraft when nessecary
 #    for i in xrange(len(ar_database)):               # add aircraft if needed
@@ -72,9 +78,9 @@ def create_aircraft(idnumber,ATC_list,r,v_max,t,dt): #creates aircraft when ness
 #            ATC_list[ATC_gate].add_plane(new_plane)
 #            idnumber =  idnumber + 1
 
-def ATC_check(ATC_list,dijk,dt,t,v_max):
+def ATC_check(ATC_list,runway_list,dijk,dt,t,v_max):
     for atc in ATC_list:
-        atc.command_check(ATC_list,v_max,dijk,dt,t)
+        atc.command_check(ATC_list,runway_list,v_max,dijk,dt,t)
 
 def execute_commands(ATC_list,separation,v_max,t,dt):
     for atc in ATC_list:

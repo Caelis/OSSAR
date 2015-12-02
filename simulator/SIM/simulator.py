@@ -13,6 +13,7 @@ from ATC_class import ATC
 from ATC_class import create_ATC
 from Map import *
 from Dijkstra_class import *
+from runway_class import *
 
 #import python modules
 from numpy import *
@@ -22,12 +23,14 @@ import pygame as pg
 #import data
 from data_import import wpl_database
 
-def simrun(t_sim,area,dt,Map,n_prop):
+def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
     #initializing values
     idnumber = 0
+    idnumber_rw = 0
     t = 0
     t_stop_total = 0
     ATC_list = []
+    runway_list = []
     plane_speed = [] 
     throughput = 0
     t_next_aircraft = 0    
@@ -37,8 +40,8 @@ def simrun(t_sim,area,dt,Map,n_prop):
     #properties    
     r = int(1000.0 * np.sqrt(area/np.pi))   #creating the radius of the airspace
     v_max = 30*0.5144
-    separation = 75
-    mean = 40 #mean of aircraft spawning time
+    separation = 275
+    mean = 3600/spawnrate #mean of aircraft spawning time
     std = 1 #standerd deviation of aircraft spawning time
     
     #initiating the simulator
@@ -47,6 +50,9 @@ def simrun(t_sim,area,dt,Map,n_prop):
         
     # create ATC for each waypoint
     ATC_list = create_ATC(wp_database,ATC_list)
+
+    #create all runways
+    idnumber_rw, runway_list = create_runway(idnumber_rw,runway_list,runway_throughput)    
     
     # initiate the Dijksta algorithm
     structure_orig, struc_dist, struc_dens = initiate_dijkstra(v_max)
@@ -56,9 +62,9 @@ def simrun(t_sim,area,dt,Map,n_prop):
     #simulator loop    
     while running == True:
         #create new aircraft if nessecary
-        t_next_aircraft, create = aircraft_interval(t_next_aircraft,idnumber,ATC_list,r,v_max,create,mean,std,t,dt)
+        t_next_aircraft, create, idnumber = aircraft_interval(t_next_aircraft,idnumber,ATC_list,runway_list,r,v_max,create,mean,std,t,dt)
         #create and execute commands
-        ATC_check(ATC_list,structure,dt,t,v_max) # check for new commands from the ATC
+        ATC_check(ATC_list,runway_list,structure,dt,t,v_max) # check for new commands from the ATC
         execute_commands(ATC_list,separation,v_max,t,dt) # excecute all commands
         #update the aicraft position
         t_stop_total,plane_speed = update_aircraft(ATC_list,plane_speed,t_stop_total,dt) 

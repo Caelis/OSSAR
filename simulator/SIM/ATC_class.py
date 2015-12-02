@@ -38,19 +38,22 @@ class ATC:
         self.throughput = False         # thoughput of ATC
     
     #check if a plane needs a command
-    def command_check(self,ATC_list,v_max,structure,dt,t):
+    def command_check(self,ATC_list,runway_list,v_max,structure,dt,t):
         for plane in self.locp:
-            self.create_commands(plane,ATC_list,v_max,structure,dt,t)
+            self.create_commands(plane,ATC_list,runway_list,v_max,structure,dt,t)
 
     #create commands for each plane if necessary
-    def create_commands(self,plane,ATC_list,v_max,structure,dt,t):
+    def create_commands(self,plane,ATC_list,runway_list,v_max,structure,dt,t):
         if plane.op == []:
             self.plan_operation(self.type,ATC_list, plane,structure,t)
             if self.type == 1:  #check to which type of ATC the aircraft is assigned
                 self.plane_handoff(ATC_list,plane,t)
             elif self.type == 4:
                 if sqrt((plane.x_pos - self.x_handoff)**2 + (plane.y_pos - self.y_handoff)**2) <= v_max*dt:
-                    self.remove_plane(plane)
+#                    occupance = runway_list[plane.atc_goal].occupance #check wether the runway is clear voor take-off
+                    occupance  = True
+                    if occupance == True:
+                        self.remove_plane(plane)
         elif sqrt((plane.x_pos - self.x_handoff)**2 + (plane.y_pos - self.y_handoff)**2) <= v_max*dt: #check wether the aircraft is within range of its next destination ((v_max*dt))
             self.plane_handoff(ATC_list,plane,t)
 
