@@ -15,12 +15,15 @@ Output:
 
 """
 class command:
-    def __init__(self, command_type, distance, value, commander, recipient, send_time, next_atc, status):
+    def __init__(self, command_type, commander, recipient, send_time, status, par):
         self.type = command_type
-        self.distance = distance
-        self.value = value
         self.commander = commander
         self.recipient = recipient
         self.send_time = send_time
-        self.next_atc = next_atc
         self.status = status #send: 1, received: 2, ackowledged: 4, denied: 8, replaced: 16, executed: 32
+        self.par = par # dictionary of command details
+
+## atc creates a command ...
+#command = new command('heading', atc1, ac2, time, {distance: 100, value: 90})
+#command = new command('speed', atc1, ac2, time, {distance: 125, value: 15})
+#command = new command('handoff', atc1, atc2, time, {ac: ac2})

@@ -47,14 +47,14 @@ class aircraft:
     def decision_making(self,ATC_list,v_max,dt):
         self.collision_avoidence(ATC_list,v_max)    # check if there are any aircraft within seperation minimum
         self.check_newcommands(v_max,dt)            # check if new commands were given
-        # print self.v
+#        print self.v
         if len(self.op) != 0:
             self.execute(v_max,dt)                      # execute given commands
         else:
             self.check_speed(v_max,dt)
-    
+        
     #check if there are any aircraft at or within seperation minimum and if so, change the speed limit
-    def collision_avoidence(self,ATC_list,v_max): ### not in use yet
+    def collision_avoidence(self,ATC_list,v_max):
         min_seperation = 75 #minimal seperation [m] for taxiing aircraft
         other_plane = [elem for elem in ATC_list[self.atc].locp if elem.id != self.id ]
         if len(other_plane) != 0:
@@ -68,33 +68,42 @@ class aircraft:
 
     #check if there are new commands given
     def check_newcommands(self,v_max,dt):
-        if len(self.op) == 1:
+        if len(self.op) == 1: #check if there is a command
             for command in self.op:
                 if command.status == 1:
                     command.status = command.status + 2
 #                add function to check which command to excecute
-                    self.set_target(command.type,v_max,dt)
-        elif len(self.op) == 0:
+                    self.process_command(command,v_max,dt)
+        elif len(self.op) == 0: #whenever there are no commands, determine own speed and heading
             self.heading = self.update_heading()
             self.v_target = False
             self.s_target = False
             self.check_speed(v_max,dt)
 
-    def set_target(self,op_type,v_max,dt): #plan the operation
-        if op_type == 1: #turn command
-            if -0.03*pi < self.op[0].value < 0.03*pi or  0.97*pi < self.op[0].value < 1.01*pi or -0.97*pi > self.op[0].value > -1.01*pi: #if turn angle is smaller then 5 degrees
-                self.v_target = v_max
-                self.s_target = 0
-            elif 0.47*pi < self.op[0].value < 0.53*pi or -0.47*pi > self.op[0].value > -0.53*pi: #if turn angle is smaller then 5 degrees
-                self.v_target = 0.5144 * int(data[self.type][2]) #set target turn speed
-                dcc_dist = 0.5*(self.v_target-self.v)**2/self.dcc + self.v*abs(self.v_target-self.v)/self.dcc #calculate the distance needed to deccelerate
-                tot_dist = self.op[0].distance #total distance until next atc
-                self.s_target = tot_dist-dcc_dist #the operation starts when the plane's current distance equals the atcdistanve minus the operation distance
-            else:
-                self.v_target = v_limit
-                self.s_target = 0
-        if self.op[0].type == 2: #speed command
-            self.v_target = self.op[0].value
+    # in the aircraft class
+    def process_command(self, command,v_max,dt):
+        if command.type == 'heading':
+            distance = command.par['distance']
+            turn_angle = command.par['turn_angle']
+            self.heading_command(distance,turn_angle,v_max,dt)
+        elif command.type == 'speed':
+            self.speed_command(distance,v_target)
+
+    def heading_command(self,distance,turn_angle,v_max,dt):
+        if -0.03*pi < turn_angle < 0.03*pi or  0.97*pi < turn_angle < 1.01*pi or -0.97*pi > turn_angle > -1.01*pi: #if turn angle is smaller then 5 degrees
+            self.v_target = v_max
+            self.s_target = 0
+        elif 0.47*pi < turn_angle < 0.53*pi or -0.47*pi > turn_angle > -0.53*pi: #if turn angle is smaller then 5 degrees
+            self.v_target = 0.5144 * int(data[self.type][2]) #set target turn speed
+            dcc_dist = 0.5*(self.v_target-self.v)**2/self.dcc + self.v*abs(self.v_target-self.v)/self.dcc #calculate the distance needed to deccelerate
+            tot_dist = distance #total distance until next atc
+            self.s_target = tot_dist-dcc_dist #the operation starts when the plane's current distance equals the atcdistanve minus the operation distance
+        else:
+            self.v_target = v_limit
+            self.s_target = 0        
+            
+    def speed_command(self,distance,v_target):
+        self.v_target = v_target
 
     def execute(self,v_max,dt): #execute commands given to this aircraft this timestep
         if self.s_target < v_max*dt:  #if target distance is reached, change speed
