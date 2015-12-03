@@ -80,6 +80,8 @@ class ATC:
     def plane_handoff(self,ATC_list,plane,t):
         next_atc = plane.op[0].par['next_atc']
         plane.op = []
+        plane.par_avoid = {}
+        plane.par_command = {}
         plane.update_atc(next_atc)
         plane.v_target = False
         plane.s_target = False

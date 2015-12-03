@@ -54,6 +54,7 @@ class aircraft:
             self.execute(v_max,dt)                      # execute given commands
         else:
             self.check_speed(v_max,dt)
+#        print self.v
         
     #check if there are any aircraft at or within seperation minimum and if so, change the speed limit
     def collision_avoidence(self,ATC_list,separation,v_max):
@@ -69,7 +70,7 @@ class aircraft:
                         brake = True
                         self.par_avoid['v_limit'] = plane.v
                         self.par_avoid['v_target'] = 0.1
-                        self.par_avoid['s_target'] = 0
+                        self.par_avoid['s_target'] = 0.1
         else:
             self.v_limit = False
         return brake
@@ -78,6 +79,8 @@ class aircraft:
     def check_newcommands(self,v_max,dt):
         if len(self.op) == 1: #check if there is a command
             for command in self.op:
+#                print command.status
+#                print "s_target: "+str(self.s_target)
                 if command.status == 1:
                     command.status = command.status + 2
                     self.process_command(command,v_max,dt)
@@ -86,6 +89,7 @@ class aircraft:
             self.v_target = False
             self.s_target = False
             self.check_speed(v_max,dt)
+#            print "self determined"
 
     # in the aircraft class
     def process_command(self, command,v_max,dt):
@@ -101,15 +105,22 @@ class aircraft:
         par_command = {}
         if -0.03*pi < turn_angle < 0.03*pi or  0.97*pi < turn_angle < 1.01*pi or -0.97*pi > turn_angle > -1.01*pi: #if turn angle is smaller then 5 degrees
             self.par_command['v_target'] = v_max
-            self.par_command['s_target'] = 0
-        elif 0.47*pi < turn_angle < 0.53*pi or -0.47*pi > turn_angle > -0.53*pi: #if turn angle is smaller then 5 degrees
+            self.par_command['s_target'] = 0.1
+            self.v_target = self.par_command['v_target']
+            self.s_target = self.par_command['s_target']
+        elif 0.47*pi < turn_angle < 0.53*pi or -0.47*pi > turn_angle > -0.53*pi or 1.47*pi < turn_angle < 1.53*pi or -1.47*pi > turn_angle > -1.53*pi: #if turn angle is smaller then 5 degrees
+            self.par_command['v_target'] = 0.5144 * int(data[self.type][2])
+            self.v_target = self.par_command['v_target']
             dcc_dist = 0.5*(self.v_target-self.v)**2/self.dcc + self.v*abs(self.v_target-self.v)/self.dcc #calculate the distance needed to deccelerate
             tot_dist = distance #total distance until next atc
-            self.par_command['v_target'] = 0.5144 * int(data[self.type][2])
-            self.par_command['s_target'] = tot_dist-dcc_dist
+            self.par_command['s_target'] = tot_dist - dcc_dist
+            self.s_target = self.par_command['s_target']
         else:
             self.par_command['v_target'] = self.v_limit
-            self.par_command['s_target'] = 0
+            self.par_command['s_target'] = 0.1
+            self.v_target = self.par_command['v_target']
+            self.s_target = self.par_command['s_target']
+#        print self.v_target
 
     #determine operation for speed command            
     def speed_command(self,distance,v_target):
@@ -117,47 +128,53 @@ class aircraft:
 
     #checks if the collision avoidence or the command is the minimum speed
     def check_minimumspeed(self,brake,v_max):
-        if self.par_avoid: #check wether there are avoidence parameters
+        if self.par_avoid: #check whether there are avoidence parameters
             self.v_limit = self.par_avoid['v_limit']
             if brake:
                 self.v_target = self.par_avoid['v_target']  
-                self.s_target = 0
+                self.s_target = 0.1
             elif self.par_command['s_target'] != 0 or self.v_target == False or self.par_avoid['v_limit'] < self.par_command['v_target'] and self.par_command['s_target'] == 0:
                 self.v.target = self.par_avoid['v_limit']
                 self.s_target = self.par_avoid['s_target']                 
             elif self.par_avoid['v_limit'] > self.par_command['v_target'] and self.par_command['s_target'] == 0:
                 self.target = self.par_command['v_target']
-                self.s_target = 0
+                self.s_target = 0.1
             else:
                 self.v.target = self.par_command['v_target']
                 self.s_target = self.par_command['s_target']
         else:
             if self.par_command:
                 self.v_target = self.par_command['v_target']
-                self.s_target = self.par_command['s_target']
+#                self.s_target = self.par_command['s_target']
             else:
                 self.v_target = v_max
-                self.s_target = 0
-#        if brake:
-#            print "plane "+str(self.id)+ " brakes, to target speed: "+str(self.v_target)+" in distance: " +str(self.s_target)
+                self.s_target = 0.1
 
     #execute commands given to this aircraft this timestep
     def execute(self,v_max,dt): 
         if self.s_target < v_max*dt or self.s_target == False:  #if no target distance/distance is reached, change speed
             self.check_speed(v_max,dt)
         else: #if target distance isn't reached, update target distance
-            max_dcc_dist = 1.5 * v_max**2/self.dcc
-            if self.s_target > max_dcc_dist:
-                self.check_speed(v_max,dt)
+#            max_dcc_dist = 1.5 * v_max**2/self.dcc
+#            if self.s_target > max_dcc_dist:
+#                self.check_speed(v_max,dt)
+#            print "self.s_target: " +str(self.s_target)
+#            print "speed: "+str(self.v)
             self.s_target = self.s_target - self.v*dt
     
     # update speed
     def check_speed(self,v_max,dt):
+#        print self.v_target
         if self.v_target == False:
+#            print "no v_target"
+#            print "self.s_target: " +str(self.s_target)
+#            if self.op:
+#                print "command status: " +str(self.op[0].status)
             if self.v != v_max:
                 new_speed = self.v + dt * (float(data[self.type][4])*0.51444) #accelerate to maximum speed
                 self.update_speed(new_speed)
         elif self.v < self.v_target:
+#            print "accelerate"
             new_speed = self.v + dt * (float(data[self.type][4])*0.51444) #accelerate to target speed
             if new_speed > self.v_target:
                 self.v = self.v_target
@@ -166,13 +183,14 @@ class aircraft:
                 self.v = new_speed
                 self.update_speed(new_speed)
         elif self.v > self.v_target:
+#            print "decelerate"
             new_speed = self.v - dt * (float(data[self.type][3])*0.51444) #deccelerate to target speed
             if new_speed < self.v_target:
                 self.v = self.v_target
                 self.update_speed(self.v_target)
             else:
                 self.v = new_speed
-                self.update_speed(new_speed)     
+                self.update_speed(new_speed)
 
     # update speed
     def update_speed(self,new_speed):

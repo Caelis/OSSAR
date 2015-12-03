@@ -19,6 +19,7 @@ from runway_class import *
 from numpy import *
 from math import *
 import pygame as pg
+from copy import deepcopy
 
 #import data
 from data_import import wpl_database
@@ -40,7 +41,7 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
     #properties    
     r = int(1000.0 * np.sqrt(area/np.pi))   #creating the radius of the airspace
     v_max = 30*0.5144
-    separation = 275
+    separation = 100
     mean = 3600/spawnrate #mean of aircraft spawning time
     std = 1 #standerd deviation of aircraft spawning time
     
@@ -56,11 +57,12 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
     
     # initiate the Dijksta algorithm
     structure_orig, struc_dist, struc_dens = initiate_dijkstra(v_max)
-    struc_dens0 = struc_dens.copy()
+    struc_dens0 = deepcopy(struc_dens)
     structure = structure_orig.copy()
 
     #simulator loop    
     while running == True:
+#        print "t: "+str(t)
         #create new aircraft if nessecary
         t_next_aircraft, create, idnumber = aircraft_interval(t_next_aircraft,idnumber,ATC_list,runway_list,r,v_max,create,mean,std,t,dt)
         #create and execute commands
@@ -75,7 +77,7 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
             running = map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X_waypoint,Y_waypoint,wp_database)
         if t>= t_sim:
             running = False
-        
+
         t = t + dt # update clock
     if Map == True:
         pg.quit()

@@ -15,6 +15,7 @@ Output:
 """
 #import modules
 from math import *
+from copy import deepcopy
 import collections
 from priodict import priorityDictionary
 
@@ -97,26 +98,24 @@ def shortestpath(G,start,end):
     return Path
 
 def update_dijsktra(ATC_list,structure,struc_dens0,struc_dist,seperation,v_max): #this function updates the structure to the actual situation
-    struc_dens = struc_dens0.copy()    
+    struc_dens = deepcopy(struc_dens0)
     for atc in ATC_list: #create density dictionary
         for plane in atc.locp:
-            struc_dens[plane.atc[0]][plane.atc[1]] = struc_dens[plane.atc[0]][plane.atc[1]] + 1 #adds one to the link the plane is on
+            if ATC_list[plane.atc[1]].type != 4:
+                struc_dens[plane.atc[0]][plane.atc[1]] = struc_dens[plane.atc[0]][plane.atc[1]] + 1 #adds one to the link the plane is on
     for key, value in struc_dens.iteritems(): #change to speed dictionary using Greenshield's model     
-        print type(value)
-        for inner_key, inner_value in value:
+        for inner_key, inner_value in value.iteritems():
             density = struc_dens[key][inner_key]
             max_density = struc_dist[key][inner_key]/seperation
-            if density > max_dens:
+            if density > max_density:
                 struc_dens[key][inner_key] = 0
             else:
                 struc_dens[key][inner_key] = v_max * (1 - (density/max_density) ) #Greenshield's model for flow speed
     for key, value in structure.iteritems(): #create actuel values for Dijkstra's algorithm
-        for inner_key,inner_value in value:
+        for inner_key,inner_value in value.iteritems():
             speed = struc_dens[key][inner_key]
             distance = struc_dist[key][inner_key]
             structure[key][inner_key] = distance/speed
-#    struc_dens = nested_dict_Greenshield(struc_dens,struc_dens,struc_dist,seperation,v_max)
-#    structure = nested_dict_structure(struc_dens,structure,struc_dens,struc_dist)
     return structure
     
 #def nested_dict_Greenshield(nested,struc_dens,struc_dist,seperation,v_max):  #change to speed dictionary using Greenshield's model
