@@ -28,7 +28,7 @@ t_simulated = 3600      # simulation time [s]
 dt = 0.04               # timestep [s]
 runway_throughput = 60  # rate[aircraft/hour] at which aircraft can take-off/land
 
-area = 50               # airspace area
+area = 30               # airspace area
 marge = 0.1             # stop criteria for accuracy purposes
 Za = 1.96               # stop criteria for accuracy purposes
 
