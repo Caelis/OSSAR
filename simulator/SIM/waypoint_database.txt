@@ -21,3 +21,6 @@ Waypoint nr	x-position	y-position	type
 19		-1200		1200		4
 20		1200		1200		4
 21		1800		1200		4
+22		-600		0		2
+23		0		0		2
+24		600		0		2
