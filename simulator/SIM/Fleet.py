@@ -38,7 +38,7 @@ def create_aircraft(idnumber,ATC_list,runway_list,r,v_max,t,dt): #creates aircra
     ATC_gate = int(rnd.choice(g_database))              # Random select a departure gate of the aircraft
     x1 = float(wp_database[ATC_gate][1])                # starting x-coordinate
     y1 = float(wp_database[ATC_gate][2])                # starting y-coordinate
-#    runwayid = rnd.choice(runway_list).id             # Random select a runway entrance of the aircraft
+#    runwayid = rnd.choice(runway_list).id               # Random select a runway entrance of the aircraft
 #    goal = []
 #    print runwayid
 #    for node in runway_list[runwayid].nodes:
@@ -48,10 +48,10 @@ def create_aircraft(idnumber,ATC_list,runway_list,r,v_max,t,dt): #creates aircra
     ATC_runway = int(rnd.choice(rw_database))           # Random select a runway entrance of the aircraft
     x2 = float(wp_database[ATC_gate][1])                # goal x-coordinate
     y2 = float(wp_database[ATC_gate][2])                # goal y-coordinate
-    speed = 30*0.5144                                    # choose starting speed
+    speed = 30*0.5144                                   # choose starting speed
     max_speed = v_max                                   # starting value for the maximum speed
     heading = False                                     # Set an initial value for the heading
-    plane_type = int(rnd.choice(data)[0])                  # choose a type of aircraft
+    plane_type = int(rnd.choice(data)[0])               # choose a type of aircraft
     max_acc = int(data[int(plane_type)][4])             # set maximum accelaration
     max_dcc = int(data[int(plane_type)][3])             # set maximum deccelration
     new_plane = aircraft(idnumber,plane_type,speed,max_speed,max_acc,max_dcc,x1,y1,x1,y1,x2,y2,heading,ATC_gate,ATC_runway)
@@ -59,34 +59,29 @@ def create_aircraft(idnumber,ATC_list,runway_list,r,v_max,t,dt): #creates aircra
     idnumber =  idnumber + 1
     return idnumber
 
-#def create_aircraft(idnumber,ATC_list,r,v_max,t,dt): #creates aircraft when nessecary
-#    for i in xrange(len(ar_database)):               # add aircraft if needed
-#        if int(ar_database[i][-1]) >= (t - 0.5*dt) and int(ar_database[i][-1]) < (t + 0.5*dt):
-#            ATC_gate = int(rnd.choice(g_database))              # Random select a departure gate of the aircraft
-#            x1 = float(wp_database[ATC_gate][1])                # starting x-coordinate
-#            y1 = float(wp_database[ATC_gate][2])                # starting y-coordinate
-#            ATC_runway = int(rnd.choice(rw_database))           # Random select a runway entrance of the aircraft
-#            x2 = float(wp_database[ATC_gate][1])                # goal x-coordinate
-#            y2 = float(wp_database[ATC_gate][2])                # goal y-coordinate
-#            speed = float(ar_database[i][1])*0.5144             # choose starting speed
-#            max_speed = v_max                                   # starting value for the maximum speed
-#            heading = False                                     # Set an initial value for the heading
-#            plane_type = ar_database[i][0]                      # choose a type of aircraft
-#            max_acc = int(data[int(plane_type)][4])             # set maximum accelaration
-#            max_dcc = int(data[int(plane_type)][3])             # set maximum deccelration
-#            new_plane = aircraft(idnumber,plane_type,speed,max_speed,max_acc,max_dcc,x1,y1,x1,y1,x2,y2,heading,ATC_gate,ATC_runway)
-#            ATC_list[ATC_gate].add_plane(new_plane)
-#            idnumber =  idnumber + 1
-
-def ATC_check(ATC_list,runway_list,dijk,dt,t,v_max):
+def ATC_check(ATC_list,runway_list,dijk,radar_range,dt,t,v_max):
     for atc in ATC_list:
         atc.command_check(ATC_list,runway_list,v_max,dijk,dt,t)
+        aircraft_radar(atc,radar_range)    #check for each aircraft which other aircraft are within radar range
 
+#check for each aircraft which other aircraft are within radar range
+def aircraft_radar(atc,radar_range):
+    plane_list = []
+    for plane in atc.locp:          # iterate over all planes in the simulator
+        plane_list.append(plane)    # append plane to plane_list to create list of all planes for radar check
+        plane.radar = []            # empty radar list of each plane
+    for plane1 in plane_list:       # loop through all planes in the simulator
+        for plane2 in plane_list:   # loop through all planes to compare to planes from above loop
+            if hypot((plane2.x_pos-plane1.x_pos),(plane2.y_pos-plane1.y_pos)) < radar_range and plane1.id != plane2.id: # When aircrafts are within radarrange(exluding self):
+                plane1.radar.append(plane2) # append plane to plane1.radar for check if avoidence is necessary
+
+# excute commands and check for collision avoidence
 def execute_commands(ATC_list,separation,v_max,t,dt):
     for atc in ATC_list:
         for plane in atc.locp:
             plane.decision_making(ATC_list,separation,v_max,dt)
-            
+
+#update each aircrafts position and track simulator variables (t_stop_total)            
 def update_aircraft(ATC_list,plane_speed,t_stop_total,dt):
     for atc in ATC_list:
         for plane in atc.locp:      #loop through all aircraft
