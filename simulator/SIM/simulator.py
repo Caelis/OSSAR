@@ -12,7 +12,7 @@ from Fleet import *
 from ATC_class import ATC
 from ATC_class import create_ATC
 from Map import *
-from Dijkstra_class import *
+from dijkstra_structure import *
 from runway_class import *
 
 #import python modules
@@ -71,7 +71,7 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
         #update the aicraft position
         t_stop_total,plane_speed = update_aircraft(ATC_list,plane_speed,t_stop_total,dt) 
         #update Dijkstra structure
-#        structure = update_dijsktra(ATC_list,structure_orig,struc_dens0,struc_dist,separation,v_max)
+        structure = update_dijsktra(ATC_list,structure_orig,struc_dens0,struc_dist,separation,v_max)
         #is True, run map
         if Map == True:
             running = map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X_waypoint,Y_waypoint,wp_database)

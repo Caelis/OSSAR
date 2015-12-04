@@ -17,7 +17,8 @@ Output:
 from math import *
 from copy import deepcopy
 import collections
-from priodict import priorityDictionary
+# from priodict import priorityDictionary
+from dijkstra import *
 
 #import data
 from data_import import wp_database
@@ -61,56 +62,24 @@ def initiate_dijkstra(v_max):
     struc_dens = dijk.density
     return structure, struc_dist, struc_dens
 
-def dijkstra(G,start,end):
-    D = {}	# dictionary of final distances
-    P = {}	# dictionary of predecessors
-    Q = priorityDictionary()	# estimated distances of non-final vertices
-
-    # initialize Q and P
-    for vertex in G:
-        Q[vertex] = float("inf")
-        P[vertex] = None
-    Q[start] = 0
-
-    for v in Q: #loop through all waypoints
-        D[v] = Q[v]
-        if v == end:    
-            break
-        for w in G[v]: #loop through all links for waypoint
-            vwLength = D[v] + G[v][w]
-            if w in D:
-                if vwLength < D[w]:
-                    raise ValueError, "Dijkstra: found better path to already-final vertex"
-            elif w not in Q or vwLength < Q[w]:
-                Q[w] = vwLength
-                P[w] = v
-    return (D,P)
-			
-def shortestpath(G,start,end):
-    D,P = dijkstra(G,start,end)
-    Path = []
-    while 1:
-        Path.append(end)
-        if end == start: 
-            break
-        end = P[end]
-    Path.reverse()
-    return Path
-
 def update_dijsktra(ATC_list,structure,struc_dens0,struc_dist,seperation,v_max): #this function updates the structure to the actual situation
     struc_dens = deepcopy(struc_dens0)
     for atc in ATC_list: #create density dictionary
         for plane in atc.locp:
             if ATC_list[plane.atc[1]].type != 4:
                 struc_dens[plane.atc[0]][plane.atc[1]] = struc_dens[plane.atc[0]][plane.atc[1]] + 1 #adds one to the link the plane is on
-    for key, value in struc_dens.iteritems(): #change to speed dictionary using Greenshield's model     
+                # struc_dens[plane.atc[1]][plane.atc[0]] = struc_dens[plane.atc[1]][plane.atc[0]] - 1 #removes one to the oppsoite link the plane is on
+    for key, value in struc_dens.iteritems(): #change to speed dictionary using Greenshield's model
         for inner_key, inner_value in value.iteritems():
             density = struc_dens[key][inner_key]
             max_density = struc_dist[key][inner_key]/seperation
             if density > max_density:
                 struc_dens[key][inner_key] = 0
             else:
-                struc_dens[key][inner_key] = v_max * (1 - (density/max_density) ) #Greenshield's model for flow speed
+                if density >= 0:
+                    struc_dens[key][inner_key] = v_max * (1 - (density/max_density) ) #Greenshield's model for flow speed
+                else:
+                    struc_dens[key][inner_key] = -v_max * (1 - (abs(density)/max_density) ) #Greenshield's model for flow speed
     for key, value in structure.iteritems(): #create actuel values for Dijkstra's algorithm
         for inner_key,inner_value in value.iteritems():
             speed = struc_dens[key][inner_key]
