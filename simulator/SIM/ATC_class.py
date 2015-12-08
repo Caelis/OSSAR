@@ -101,6 +101,10 @@ class ATC:
 
     def add_plane(self,plane):
         self.locp.append(plane)
+    # excute commands and check for collision avoidence
+    def execute_command(self,separation,v_max,t,dt):
+        for plane in self.locp:
+            plane.decision_making(separation,v_max,dt)
 
 def create_ATC(wp_database,ATC_list):
     for i in xrange(len(wp_database)):

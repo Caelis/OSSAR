@@ -67,11 +67,12 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
         #create new aircraft if nessecary
         t_next_aircraft, create, idnumber = aircraft_interval(t_next_aircraft,idnumber,ATC_list,runway_list,r,v_max,create,mean,std,t,dt)
         #create and execute commands
-        ATC_check(ATC_list,runway_list,taxiwayGraph,radar_range,dt,t,v_max) # check for new commands from the ATC
-        execute_commands(ATC_list,separation,v_max,t,dt) # excecute all commands
+        ATC_check(ATC_list,runway_list,taxiwayGraph,radar_range,dt,t,v_max)
+        #excecute all commands
+        execute_commands(ATC_list,separation,v_max,t,dt)
         #update the aicraft position
         t_stop_total,plane_speed = update_aircraft(ATC_list,plane_speed,t_stop_total,dt)
-        #is True, run map
+        #if True, run map
         if Map == True:
             running = map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X_waypoint,Y_waypoint,wp_database,wpl_database)
         if t>= t_sim:
