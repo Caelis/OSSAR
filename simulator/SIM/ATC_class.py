@@ -89,6 +89,8 @@ class ATC:
         plane.s_target = False
         plane.heading = False
         plane.heading_target = False
+        plane.x_beg = float(wp_database[self.id][1])
+        plane.y_beg = float(wp_database[self.id][2])
         plane.x_des = float(wp_database[next_atc][1])
         plane.y_des = float(wp_database[next_atc][2])
         ATC_list[next_atc].add_plane(plane) # add to next ATC

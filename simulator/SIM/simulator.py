@@ -43,6 +43,7 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
     r = int(1000.0 * np.sqrt(area/np.pi))   #creating the radius of the airspace
     v_max = 30*0.5144
     separation = 100
+    radar_range = 250
     mean = 3600/spawnrate #mean of aircraft spawning time
     std = 1 #standerd deviation of aircraft spawning time
     
@@ -74,7 +75,7 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
         #create new aircraft if nessecary
         t_next_aircraft, create, idnumber = aircraft_interval(t_next_aircraft,idnumber,ATC_list,runway_list,r,v_max,create,mean,std,t,dt)
         #create and execute commands
-        ATC_check(ATC_list,runway_list,taxiwayGraph,dt,t,v_max) # check for new commands from the ATC
+        ATC_check(ATC_list,runway_list,taxiwayGraph,radar_range,dt,t,v_max) # check for new commands from the ATC
         execute_commands(ATC_list,separation,v_max,t,dt) # excecute all commands
         #update the aicraft position
         t_stop_total,plane_speed = update_aircraft(ATC_list,plane_speed,t_stop_total,dt)
