@@ -78,9 +78,9 @@ def create_aircraft(idnumber,ATC_list,runway_list,r,v_max,t,dt): #creates aircra
 #            ATC_list[ATC_gate].add_plane(new_plane)
 #            idnumber =  idnumber + 1
 
-def ATC_check(ATC_list,runway_list,graph,dt,t,v_max):
+def ATC_check(ATC_list,runway_list,dijk,dt,t,v_max):
     for atc in ATC_list:
-        atc.command_check(ATC_list,runway_list,v_max,graph,dt,t)
+        atc.command_check(ATC_list,runway_list,v_max,dijk,dt,t)
 
 def execute_commands(ATC_list,separation,v_max,t,dt):
     for atc in ATC_list:
