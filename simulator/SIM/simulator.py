@@ -12,7 +12,7 @@ from Fleet import *
 from ATC_class import ATC
 from ATC_class import create_ATC
 from Map import *
-from Dijkstra_class import *
+from dijkstra_structure import *
 from runway_class import *
 
 #import python modules
@@ -20,6 +20,7 @@ from numpy import *
 from math import *
 import pygame as pg
 from copy import deepcopy
+import networkx as nx
 
 #import data
 from data_import import wpl_database
@@ -57,32 +58,37 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
     idnumber_rw, runway_list = create_runway(idnumber_rw,runway_list,runway_throughput)    
     
     # initiate the Dijksta algorithm
-    structure_orig, struc_dist, struc_dens = initiate_dijkstra(v_max)
-    struc_dens0 = deepcopy(struc_dens)
-    structure = structure_orig.copy()
+    taxiwayGraph0 = initiate_dijkstra(v_max)
+    # print taxiwayGraph0.adjacency_iter()
+    print taxiwayGraph0.edges()
+    nx.draw(taxiwayGraph0)
 
-    #simulator loop    
+    # struc_dens0 = deepcopy(struc_dens)
+    # structure = structure_orig.copy()
+
+    #simulator loop
     while running == True:
+        taxiwayGraph = nx.DiGraph(taxiwayGraph0)
+        #update Dijkstra structure based on current traffic situation
+        taxiwayGraph = update_dijsktra(ATC_list,taxiwayGraph,separation,v_max)
 #        print "t: "+str(t)
         #create new aircraft if nessecary
         t_next_aircraft, create, idnumber = aircraft_interval(t_next_aircraft,idnumber,ATC_list,runway_list,r,v_max,create,mean,std,t,dt)
         #create and execute commands
-        ATC_check(ATC_list,runway_list,structure,radar_range,dt,t,v_max) # check for new commands from the ATC
+        ATC_check(ATC_list,runway_list,taxiwayGraph,radar_range,dt,t,v_max) # check for new commands from the ATC
         execute_commands(ATC_list,separation,v_max,t,dt) # excecute all commands
         #update the aicraft position
-        t_stop_total,plane_speed = update_aircraft(ATC_list,plane_speed,t_stop_total,dt) 
-        #update Dijkstra structure
-#        structure = update_dijsktra(ATC_list,structure_orig,struc_dens0,struc_dist,separation,v_max)
+        t_stop_total,plane_speed = update_aircraft(ATC_list,plane_speed,t_stop_total,dt)
         #is True, run map
         if Map == True:
-            running = map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X_waypoint,Y_waypoint,wp_database)
+            running = map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X_waypoint,Y_waypoint,wp_database,wpl_database)
         if t>= t_sim:
             running = False
 
         t = t + dt # update clock
     if Map == True:
         pg.quit()
-    
+
     v_average = sum(plane_speed)/len(plane_speed)
 
-    return throughput,t_stop_total,v_average 
+    return throughput,t_stop_total,v_average

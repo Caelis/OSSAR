@@ -13,9 +13,10 @@ Output:
 #import python modules
 from math import *
 import random as rnd
+import networkx as nx
 
 #import OSSAR modules
-from Dijkstra_class import shortestpath
+# from dijkstra_structure import shortestpath
 from command_class import *
 
 #import data
@@ -38,14 +39,14 @@ class ATC:
         self.throughput = False         # thoughput of ATC
     
     #check if a plane needs a command
-    def command_check(self,ATC_list,runway_list,v_max,structure,dt,t):
+    def command_check(self,ATC_list,runway_list,v_max,graph,dt,t):
         for plane in self.locp:
-            self.create_commands(plane,ATC_list,runway_list,v_max,structure,dt,t)
+            self.create_commands(plane,ATC_list,runway_list,v_max,graph,dt,t)
 
     #create commands for each plane if necessary
-    def create_commands(self,plane,ATC_list,runway_list,v_max,structure,dt,t):
+    def create_commands(self,plane,ATC_list,runway_list,v_max,graph,dt,t):
         if plane.op == []:
-            self.plan_operation(self.type,ATC_list, plane,structure,t)
+            self.plan_operation(self.type,ATC_list, plane, graph,t)
             if self.type == 1:  #check to which type of ATC the aircraft is assigned
                 self.plane_handoff(ATC_list,plane,t)
             elif self.type == 4:
@@ -57,11 +58,12 @@ class ATC:
         elif sqrt((plane.x_pos - self.x_handoff)**2 + (plane.y_pos - self.y_handoff)**2) <= v_max*dt: #check wether the aircraft is within range of its next destination ((v_max*dt))
             self.plane_handoff(ATC_list,plane,t)
 
-    def plan_operation(self,atc_type,ATC_list,plane,structure,t):
+    def plan_operation(self,atc_type,ATC_list,plane,graph,t):
         par = {}
         command_type = 'heading'
         if atc_type == 1 or atc_type == 2:
-            path = shortestpath(structure,self.id,plane.atc_goal) #give the current fastest route using Dijkstra algorithm
+            path = nx.dijkstra_path(graph,self.id,plane.atc_goal)
+            # path = shortestpath(graph,self.id,plane.atc_goal) #give the current fastest route using Dijkstra algorithm
             next_atc = path[1] #selects the next atc
             new_heading = atan2((int(wp_database[int(next_atc)][2])-(self.y_handoff)), (int(wp_database[int(next_atc)][1])-(self.x_handoff))) #calculate the heading after the operation
             plane.heading = atan2((self.y_handoff-plane.y_pos), (self.x_handoff-plane.x_pos))

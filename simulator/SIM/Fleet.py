@@ -59,9 +59,9 @@ def create_aircraft(idnumber,ATC_list,runway_list,r,v_max,t,dt): #creates aircra
     idnumber =  idnumber + 1
     return idnumber
 
-def ATC_check(ATC_list,runway_list,dijk,radar_range,dt,t,v_max):
+def ATC_check(ATC_list,runway_list,graph,radar_range,dt,t,v_max):
     for atc in ATC_list:
-        atc.command_check(ATC_list,runway_list,v_max,dijk,dt,t)
+        atc.command_check(ATC_list,runway_list,v_max,graph,dt,t)
         aircraft_radar(atc,radar_range)    #check for each aircraft which other aircraft are within radar range
 
 #check for each aircraft which other aircraft are within radar range
