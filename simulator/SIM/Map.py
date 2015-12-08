@@ -17,7 +17,7 @@ rectlist = []
 
 def map_initialization(wp_database):
     pg.init()
-    reso = (600,600)
+    reso = (900,900)
     scr = pg.display.set_mode(reso)
     scrrect = scr.get_rect()
     scr.fill((2,255,70))
@@ -31,7 +31,7 @@ def map_initialization(wp_database):
         Y_waypoint.append(int(wp_database[i][2]))    
 
     for i in xrange(0,360):
-        piclist.append(pg.transform.rotozoom(plane_pic,i,(1./12.)))
+        piclist.append(pg.transform.rotozoom(plane_pic,i,(1./14.)))
         rectlist.append(piclist[i].get_rect())
     return reso, scr, scrrect, plane_pic, piclist, X_waypoint, Y_waypoint
     
