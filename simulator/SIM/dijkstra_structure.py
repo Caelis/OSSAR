@@ -15,7 +15,6 @@ Output:
 """
 #import modules
 from math import *
-from copy import deepcopy
 import collections
 
 import networkx as nx
@@ -24,49 +23,6 @@ import networkx as nx
 #import data
 from data_import import wp_database
 from data_import import wpl_database
-
-class dijkstra_structure:
-    def __init__(self):
-        self.nodes = []
-        self.edges = {}
-        self.distances = {} #dictionary of the distances of each edge
-        self.density = {} #dictionary of the density of each edge
-
-    def add_node(self, value):
-        self.nodes.append(value)
-
-    #create all edges and add a value depending on speed
-    def add_edge(self, node, v_max): #add edge to the structure, with as value the time it would take to pass the adge at v_max
-        # get the links that are connected to this node
-        links = [elem for elem in wpl_database if int(elem[0]) == node]
-        # This if clauses are to make sure to not overwrite the "return" edges
-        # if self.edges.has_key(node):
-        #     link_dict = self.edges[node]
-        # else:
-        #     link_dict = {}
-        # if self.distances.has_key(node):
-        #     dist_dict = self.distances[node]
-        # else:
-        #     dist_dict = {}
-        # if self.density.has_key(node):
-        #     dens_dict = self.density[node]
-        # else:
-        #     dens_dict = {}
-        # loop through all links of this node
-        for i in xrange(len(links)):
-            # calulate the distanc of this node
-            distance = hypot((wp_database[node][1]-wp_database[links[i][1]][1]),(wp_database[node][2]-wp_database[links[i][1]][2]))
-            # compute a value for this node
-            value =  distance / v_max
-            # add the edges in "positive" direction
-            self.edges = update(self.edges,{node: {links[i][1]: value}})
-            self.distances = update(self.distances,{node: {links[i][1]: distance}})
-            self.density = update(self.density,{node:{links[i][1]: 0}})
-            # add the edges in "negative" direction
-            self.edges = update(self.edges,{links[i][1]: {node: value}})
-            self.distances = update(self.distances,{links[i][1]: {node: distance}})
-            self.density = update(self.density,{links[i][1]:{node: 0}})
-        print self.edges
 
 #creates dictionaries of the structure values, structure distances and structure density
 def initiate_dijkstra(v_max):
@@ -113,7 +69,7 @@ def update_dijsktra(ATC_list,graph,seperation,v_max): #this function updates the
                 else:
                     speed = -1
             if speed > 0:
-                graph[key][inner_key]['weight'] = distance/speed
+                graph[key][inner_key]['weight'] = distance/speed # TODO this is NOT our optimal soultion!  BALANCING DILEMMA
             elif speed == 0:
                 graph[key][inner_key]['weight'] = float('Inf')
             else:

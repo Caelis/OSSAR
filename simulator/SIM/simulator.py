@@ -19,7 +19,6 @@ from runway_class import *
 from numpy import *
 from math import *
 import pygame as pg
-from copy import deepcopy
 import networkx as nx
 
 #import data
@@ -59,19 +58,12 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
     
     # initiate the Dijksta algorithm
     taxiwayGraph0 = initiate_dijkstra(v_max)
-    # print taxiwayGraph0.adjacency_iter()
-    print taxiwayGraph0.edges()
-    nx.draw(taxiwayGraph0)
-
-    # struc_dens0 = deepcopy(struc_dens)
-    # structure = structure_orig.copy()
 
     #simulator loop
     while running == True:
         taxiwayGraph = nx.DiGraph(taxiwayGraph0)
         #update Dijkstra structure based on current traffic situation
         taxiwayGraph = update_dijsktra(ATC_list,taxiwayGraph,separation,v_max)
-#        print "t: "+str(t)
         #create new aircraft if nessecary
         t_next_aircraft, create, idnumber = aircraft_interval(t_next_aircraft,idnumber,ATC_list,runway_list,r,v_max,create,mean,std,t,dt)
         #create and execute commands
