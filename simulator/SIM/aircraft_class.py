@@ -46,7 +46,7 @@ class aircraft:
         self.par_command = {}       # stores parameters for commanded manoeuver
 
     # decision making process to determine heading and speed
-    def decision_making(self,ATC_list,separation,v_max,dt): 
+    def decision_making(self,separation,v_max,dt): 
         brake = self.radar_check(separation)                # perform a collision avoidanace check for all planes within aircraft range
         self.check_newcommands(v_max,brake,dt)              # check if new commands were given
         self.check_minimumspeed(brake,v_max)                # check if the operation speed or avoidence speed is the lowest and set as targetspeed
@@ -176,7 +176,7 @@ class aircraft:
         elif 0.47*pi < turn_angle < 0.53*pi or -0.47*pi > turn_angle > -0.53*pi or 1.47*pi < turn_angle < 1.53*pi or -1.47*pi > turn_angle > -1.53*pi: #if turn angle is smaller then 5 degrees
             self.par_command['v_target'] = 0.5144 * int(data[self.type][2]) # operation target speed is maximum turning speed
             self.v_target = self.par_command['v_target']        # set aircraft target speed to operation target speed
-            dcc_dist = 0.5*(self.v_target-self.v)**2/self.dcc + self.v*abs(self.v_target-self.v)/self.dcc #calculate the distance needed to deccelerate
+            dcc_dist = 0.5*(self.v_target-v_max)**2/self.dcc + v_max*abs(self.v_target-v_max)/self.dcc #calculate the maximal distance needed to deccelerate
             tot_dist = distance                                 # distance at which the operation should be completed
             self.par_command['s_target'] = tot_dist - dcc_dist  # operation target distance is the distance until it needs to decelerate
             self.s_target = self.par_command['s_target']        # set aircraft target distance to operation target distance
@@ -215,20 +215,22 @@ class aircraft:
 
     #execute commands given to this aircraft this timestep
     def execute(self,v_max,brake,dt): 
-        if self.s_target < v_max*dt or self.s_target == False:  #if no target distance/distance is reached, change speed
-            self.check_speed(v_max,brake,dt)
-        else: 
-            self.s_target = self.s_target - self.v*dt
-    
-    # update speed
-    def check_speed(self,v_max,brake,dt):
-        if not brake and self.s_target > 50: # when the plane doesn't have to brake and it still has some distance to taxi until target speed needs to be achieved
+        dcc_dist = 1.5*(v_max)**2/self.dcc          # calculate the maximum distance needed to deccelerate
+        if not brake and self.s_target > dcc_dist:  # when the plane doesn't have to brake and it still has some distance to taxi until target speed needs to be achieved
             if self.v < v_max:
                 new_speed = self.v + dt * (float(data[self.type][4])*0.51444)   # accelerate to maximum speed
                 if new_speed > v_max:
                     new_speed = v_max
                 self.update_speed(new_speed)
-        elif self.v_target == False:
+            self.s_target = self.s_target - self.v*dt
+        elif self.s_target < v_max*dt or self.s_target == False:  #if no target distance/distance is reached, change speed
+            self.check_speed(v_max,brake,dt)
+        else: 
+            self.s_target = self.s_target - self.v*dt
+  
+    # update speed
+    def check_speed(self,v_max,brake,dt):
+        if self.v_target == False:
             if self.v != v_max:
                 new_speed = self.v + dt * (float(data[self.type][4])*0.51444)   # accelerate to maximum speed
                 if new_speed > v_max:

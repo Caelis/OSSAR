@@ -78,8 +78,7 @@ def aircraft_radar(atc,radar_range):
 # excute commands and check for collision avoidence
 def execute_commands(ATC_list,separation,v_max,t,dt):
     for atc in ATC_list:
-        for plane in atc.locp:
-            plane.decision_making(ATC_list,separation,v_max,dt)
+        atc.execute_command(separation,v_max,t,dt)
 
 #update each aircrafts position and track simulator variables (t_stop_total)            
 def update_aircraft(ATC_list,plane_speed,t_stop_total,dt):
