@@ -53,9 +53,11 @@ def initiate_dijkstra(v_max):
 def update_dijsktra(ATC_list,graph,seperation,v_max): #this function updates the structure to the current situation
     for atc in ATC_list: #create density dictionary
         for plane in atc.locp:
-            if ATC_list[plane.atc[1]].type != 4:
-                graph[plane.atc[0]][plane.atc[1]]['density'] = graph[plane.atc[0]][plane.atc[1]]['density'] + 1
-                graph[plane.atc[1]][plane.atc[0]]['density'] = graph[plane.atc[1]][plane.atc[0]]['density'] - 1
+            if plane.atc[0] and plane.atc[1]: # TODO still buggy!
+                # only update density if "postive" density is >=0
+                if graph[plane.atc[0]][plane.atc[1]]['density'] >=0:
+                    graph[plane.atc[0]][plane.atc[1]]['density'] = graph[plane.atc[0]][plane.atc[1]]['density'] + 1 # TODO related to issue #16
+                    graph[plane.atc[1]][plane.atc[0]]['density'] = graph[plane.atc[1]][plane.atc[0]]['density'] - 1
     for key,value in graph.adjacency_iter():
         for inner_key,inner_value in value.items():
             density = inner_value['density']
@@ -63,6 +65,8 @@ def update_dijsktra(ATC_list,graph,seperation,v_max): #this function updates the
             max_density = distance/seperation
             if density > max_density:
                 speed = 0
+            elif density > 0.5* max_density:
+                speed = v_max
             else:
                 if density >= 0:
                     speed = v_max * (1 - (density/max_density) )
