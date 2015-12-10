@@ -14,6 +14,7 @@ Output:
 from math import *
 import random as rnd
 import networkx as nx
+from weightedCustom import dijkstra_path
 
 #import OSSAR modules
 # from dijkstra_structure import shortestpath
@@ -37,6 +38,10 @@ class ATC:
         self.x_handoff = x_handoff      # x-coordinate at which a aircraft should be handed over
         self.y_handoff = y_handoff      # y-coordinate at which a aircraft should be handed over
         self.throughput = False         # thoughput of ATC
+
+    def update(self,ATC_list,runway_list,v_max,graph,dt,t):
+        # check if commands for the aircraft are necessary
+        self.command_check(ATC_list,runway_list,v_max,graph,dt,t)
     
     #check if a plane needs a command
     def command_check(self,ATC_list,runway_list,v_max,graph,dt,t):
@@ -45,39 +50,69 @@ class ATC:
 
     #create commands for each plane if necessary
     def create_commands(self,plane,ATC_list,runway_list,v_max,graph,dt,t):
-        if plane.op == []:
-            self.plan_operation(self.type,ATC_list, plane, graph,t)
-            if self.type == 1:  #check to which type of ATC the aircraft is assigned
+        # plan operation
+        self.plan_operation(self.type,ATC_list, plane, graph,t)
+        # is aircraft at handoff point
+        if sqrt((plane.x_pos - self.x_handoff)**2 + (plane.y_pos - self.y_handoff)**2) <= v_max*dt:
+            # if I'm an runway/gate
+            if self.type == 4:
+                 occupance  = False
+                 # if runway available
+                 if occupance == False:
+                     # remove aircraft from sim
+                     self.remove_plane(plane)
+                     return
+            else:
                 self.plane_handoff(ATC_list,plane,t)
-            elif self.type == 4:
-                if sqrt((plane.x_pos - self.x_handoff)**2 + (plane.y_pos - self.y_handoff)**2) <= v_max*dt:
-#                    occupance = runway_list[plane.atc_goal].occupance #check wether the runway is clear voor take-off
-                    occupance  = True
-                    if occupance == True:
-                        self.remove_plane(plane)
-        elif sqrt((plane.x_pos - self.x_handoff)**2 + (plane.y_pos - self.y_handoff)**2) <= v_max*dt: #check wether the aircraft is within range of its next destination ((v_max*dt))
-            self.plane_handoff(ATC_list,plane,t)
+#         if plane.op == []:
+#             self.plan_operation(self.type,ATC_list, plane, graph,t)
+#             if self.type == 1:  #check to which type of ATC the aircraft is assigned
+#                 self.plane_handoff(ATC_list,plane,t)
+#             elif self.type == 4:
+#                 if sqrt((plane.x_pos - self.x_handoff)**2 + (plane.y_pos - self.y_handoff)**2) <= v_max*dt:
+# #                    occupance = runway_list[plane.atc_goal].occupance #check wether the runway is clear voor take-off
+#                     occupance  = True
+#                     if occupance == True:
+#                         self.remove_plane(plane)
+#         elif sqrt((plane.x_pos - self.x_handoff)**2 + (plane.y_pos - self.y_handoff)**2) <= v_max*dt: #check wether the aircraft is within range of its next destination ((v_max*dt))
+#             self.plane_handoff(ATC_list,plane,t)
 
     def plan_operation(self,atc_type,ATC_list,plane,graph,t):
         par = {}
         command_type = 'heading'
         if atc_type == 1 or atc_type == 2:
-            path = nx.dijkstra_path(graph,self.id,plane.atc_goal)
-            # path = shortestpath(graph,self.id,plane.atc_goal) #give the current fastest route using Dijkstra algorithm
-            next_atc = path[1] #selects the next atc
-            new_heading = atan2((int(wp_database[int(next_atc)][2])-(self.y_handoff)), (int(wp_database[int(next_atc)][1])-(self.x_handoff))) #calculate the heading after the operation
-            plane.heading = atan2((self.y_handoff-plane.y_pos), (self.x_handoff-plane.x_pos))
-            turn_angle = new_heading - plane.heading # calculate the turn angle         
-        if atc_type == 4:      
+            # run Dijkstra and see if solution possible
+            success, path = dijkstra_path(graph,self.id,plane.atc_goal)
+            # if solution possible, command new heading/assign ATC
+            if success:
+                # path = shortestpath(graph,self.id,plane.atc_goal) #give the current fastest route using Dijkstra algorithm
+                next_atc = path[1] #selects the next atc
+                new_heading = atan2((int(wp_database[int(next_atc)][2])-(self.y_handoff)), (int(wp_database[int(next_atc)][1])-(self.x_handoff))) #calculate the heading after the operation
+                plane.heading = atan2((self.y_handoff-plane.y_pos), (self.x_handoff-plane.x_pos))
+                turn_angle = new_heading - plane.heading # calculate the turn angle
+                distance = hypot(plane.x_pos-self.x_handoff, plane.y_pos-self.y_handoff) #calculate at which distance the operation should be finished
+                par['next_atc'] = next_atc
+                par['turn_angle'] = turn_angle
+                par['distance'] = distance
+                plane_command = command(command_type, self.id, plane.id, t, 1, par) #1 = send
+                plane.op.append(plane_command)
+            # Otherwise tell the aircraft to stop immediately
+            else:
+                print 'no path found'
+                par['distance'] = 0.00000001
+                par['v_target'] = 0
+                plane_command = command('speed', self.id, plane.id, t, 1, par) #1 = send
+                plane.op.append(plane_command)
+        if atc_type == 4:
             next_atc = self.id #selects the next atc
             new_heading = atan2((int(wp_database[int(next_atc)][2])-(self.y_handoff)), (int(wp_database[int(next_atc)][1])-(self.x_handoff))) #calculate the heading after the operation
             turn_angle = 0.5*pi # calculate the turn angle
-        plane_command = command(command_type, self.id, plane.id, t, 1, par) #1 = send     
-        distance = hypot(plane.x_pos-self.x_handoff, plane.y_pos-self.y_handoff) #calculate at which distance the operation should be finished
-        par['next_atc'] = next_atc
-        par['turn_angle'] = turn_angle
-        par['distance'] = distance
-        plane.op.append(plane_command)
+            distance = hypot(plane.x_pos-self.x_handoff, plane.y_pos-self.y_handoff) #calculate at which distance the operation should be finished
+            par['next_atc'] = next_atc
+            par['turn_angle'] = turn_angle
+            par['distance'] = distance
+            plane_command = command(command_type, self.id, plane.id, t, 1, par) #1 = send
+            plane.op.append(plane_command)
         
     def plane_handoff(self,ATC_list,plane,t):
         next_atc = plane.op[0].par['next_atc']
@@ -102,9 +137,9 @@ class ATC:
     def add_plane(self,plane):
         self.locp.append(plane)
     # excute commands and check for collision avoidence
-    def execute_command(self,separation,v_max,t,dt):
-        for plane in self.locp:
-            plane.decision_making(separation,v_max,dt)
+    # def execute_command(self,separation,v_max,t,dt):
+    #     for plane in self.locp:
+    #         plane.decision_making(separation,v_max,dt)
 
 def create_ATC(wp_database,ATC_list):
     for i in xrange(len(wp_database)):

@@ -44,26 +44,59 @@ class aircraft:
         self.radar = []             # stores all planes in radar range
         self.par_avoid = {}         # stores parameters for avoidence manoeuver
         self.par_command = {}       # stores parameters for commanded manoeuver
+        self.comfort_deceleration = 2
+        self.max_deceleration = 100
+        self.comfort_acceleration = 1
+        self.deceleration = 0
+
+    def update(self,separation,v_max,t,dt):
+        this_t_stop = 0
+        self.decision_making(separation,v_max,dt)
+        self.update_speed(dt)
+        self.update_pos(dt)    #update the position of each aircraf decide to accelerate or deceleratet
+        if self.v < 0.5:       #each time step calculate the total stopping time
+            this_t_stop = dt
+        return this_t_stop, self.v
 
     # decision making process to determine heading and speed
-    def decision_making(self,separation,v_max,dt): 
-        brake = self.radar_check(separation)                # perform a collision avoidanace check for all planes within aircraft range
-        self.check_newcommands(v_max,brake,dt)              # check if new commands were given
-        self.check_minimumspeed(brake,v_max)                # check if the operation speed or avoidence speed is the lowest and set as targetspeed
-        if len(self.op) != 0 or len(self.par_avoid) != 0:   # if there are commands or if there is no avoidence necessary:
-            self.execute(v_max,brake,dt)                    # execute given commands
+    def decision_making(self,separation,v_max,dt):
+        self.target_speeds = []
+        self.deceleration = -self.comfort_acceleration         # always accelerate!
+        conflict = True
+        #  check for collision
+        conflict = self.radar_check(separation)                # perform a collision avoidanace check for all planes within aircraft range
+        command = self.check_newcommands(v_max,conflict,dt)    # check if new commands were given
+        # Here we have 2 boolean variables conflict and command, as well as a dictionary
+
+        needed_deceleration = 0     # assume no deceleration needed
+        for target_speed in self.target_speeds:
+            commanded_deceleration = (self.v-target_speed['v_target'])/(target_speed['s_target']/self.v) # deceleration based on command
+            if commanded_deceleration > needed_deceleration:
+                needed_deceleration = commanded_deceleration
+        # print str(self.id) + ': ' + str(self.target_speeds) + ', which is a needed deceleration of: ' + str(needed_deceleration)
+        if needed_deceleration >= self.comfort_deceleration:
+            if needed_deceleration < self.max_deceleration:
+                print str(self.id) + ' must decelerate! Current speed = ' + str(self.v)
+                self.deceleration = needed_deceleration
+            else:
+                print str(self.id) + ' must decelerate at max! Current speed = ' + str(self.v)
+                self.deceleration = self.max_deceleration
+
+        # self.check_minimumspeed(conflict,v_max)                # check if the operation speed or avoidence speed is the lowest and set as targetspeed
+        # if len(self.op) != 0 or len(self.par_avoid) != 0:   # if there are commands or if there is no avoidence necessary:
+        #     self.execute(v_max,conflict,dt)                    # execute given commands
 
    # checks all planes the radar has detected, which type of conflict would occure when within seperation
     def radar_check(self,min_separation):
-        brake = False                                                           # set brake is False (no braking necessary)
+        conflict = False                                                           # set brake is False (no braking necessary)
         for plane in self.radar:                                                # loop through all planes within radar range
             if self.atc == plane.atc:                                           # check if planes are on the same link (self.atc1 = plane.atc1 and self.atc2 = plane.atc2)
-                brake = self.col_avoidence_link(brake,plane,min_separation)     # execute collision avoidence for same link
+                conflict = self.col_avoidence_link(conflict,plane,min_separation)     # execute collision avoidence for same link
             elif self.atc[1] == plane.atc[1] and self.atc[0] != plane.atc[0]:   # check if planes have the same goal atc but are not on the same link
-                brake = self.col_avoidence_goal(brake,plane,min_separation)     # execute collision avoidence for same goal link but not same current link
+                conflict = self.col_avoidence_goal(conflict,plane,min_separation)     # execute collision avoidence for same goal link but not same current link
             elif self.atc[1] == plane.atc[0]:                                   # check if self.plane
-                brake = self.col_avoidence_next(brake,plane,min_separation)     # execute collision avoidence for plane turning onto other planes link
-        return brake
+                conflict = self.col_avoidence_next(conflict,plane,min_separation)     # execute collision avoidence for plane turning onto other planes link
+        return conflict
 
     # determines the necessary avoidence parameters to avoid collision when two planes share the current link
     def col_avoidence_link(self,brake,plane,min_separation):
@@ -76,15 +109,17 @@ class aircraft:
                 v_limit = plane.v                                                   # determine limit speed for this operation
                 v_target = plane.v                                                  # determine target speed (almost zero to regain seperation if necessary)
                 s_target = 0.1                                                      # determine target distance (almost zero, since direct action)
-                if self.par_avoid:                                                  # check of there already is an avoidence operation started
-                    if v_limit < self.par_avoid['v_limit']:                         # check if this avoidence manouver had a lower speed
-                        self.par_avoid['v_limit'] = v_limit                         # set avoidence limit speed
-                        self.par_avoid['v_target'] = v_target                       # set avoidence target speed (almost zero to regain seperation)
-                        self.par_avoid['s_target'] = s_target                       # set avoidence target distance (almost zero since direct action)
-                else:                                                               # if no avoidence operation is started
-                    self.par_avoid['v_limit'] = v_limit                             # set avoidence limit speed
-                    self.par_avoid['v_target'] = v_target                           # set avoidence target speed (almost zero to regain seperation)
-                    self.par_avoid['s_target'] = s_target                           # set avoidence target distance (almost zero since direct action)
+                # if self.par_avoid:                                                  # check of there already is an avoidence operation started
+                #     if v_limit < self.par_avoid['v_limit']:                         # check if this avoidence manouver had a lower speed
+                #         self.target_speeds.append({'v_target': v_target, 's_target': s_target})
+                #         # self.par_avoid['v_limit'] = v_limit                         # set avoidence limit speed
+                #         # self.par_avoid['v_target'] = v_target                       # set avoidence target speed (almost zero to regain seperation)
+                #         # self.par_avoid['s_target'] = s_target                       # set avoidence target distance (almost zero since direct action)
+                # else:
+                self.target_speeds.append({'v_target': v_target, 's_target': s_target})
+                    # self.par_avoid['v_limit'] = v_limit                             # set avoidence limit speed
+                    # self.par_avoid['v_target'] = v_target                           # set avoidence target speed (almost zero to regain seperation)
+                    # self.par_avoid['s_target'] = s_target                           # set avoidence target distance (almost zero since direct action)
         return brake
 
     # determines the necessary avoidence parameters to avoid collision when two planes have the same goal link but do not share the current link
@@ -100,15 +135,17 @@ class aircraft:
                 v_target = plane.v                                                  # speed when other plane is at the intersection should be the same as that plane's speed
                 v_limit = plane.v                                                   # determine limit speed for this operation
                 s_target = 0.1                                                      # determine target distance (almost zero, since direct action)
-                if self.par_avoid:                                                  # check of there already is an avoidence operation started
-                    if v_limit < self.par_avoid['v_limit']:                         # check if this avoidence manouver had a lower speed
-                        self.par_avoid['v_limit'] = v_limit                         # set avoidence limit speed
-                        self.par_avoid['v_target'] = v_target                       # set avoidence target speed (almost zero to regain seperation)
-                        self.par_avoid['s_target'] = s_target                       # set avoidence target distance (almost zero since direct action)
-                else:                                                               # if no avoidence operation is started
-                    self.par_avoid['v_limit'] = v_limit                             # set avoidence limit speed
-                    self.par_avoid['v_target'] = v_target                           # set avoidence target speed (almost zero to regain seperation)
-                    self.par_avoid['s_target'] = s_target                           # set avoidence target distance (almost zero since direct action)
+                # if self.par_avoid:                                                  # check of there already is an avoidence operation started
+                #     if v_limit < self.par_avoid['v_limit']:                         # check if this avoidence manouver had a lower speed
+                #         self.target_speeds.append({'v_target': v_target, 's_target': s_target})
+                #         # self.par_avoid['v_limit'] = v_limit                         # set avoidence limit speed
+                #         # self.par_avoid['v_target'] = v_target                       # set avoidence target speed (almost zero to regain seperation)
+                #         # self.par_avoid['s_target'] = s_target                       # set avoidence target distance (almost zero since direct action)
+                # else:                                                               # if no avoidence operation is started
+                self.target_speeds.append({'v_target': v_target, 's_target': s_target})
+                    # self.par_avoid['v_limit'] = v_limit                             # set avoidence limit speed
+                    # self.par_avoid['v_target'] = v_target                           # set avoidence target speed (almost zero to regain seperation)
+                    # self.par_avoid['s_target'] = s_target                           # set avoidence target distance (almost zero since direct action)
         return brake
 
     # determines the necessary avoidence parameters to avoid collision this plane turns onto other link with planes within seperation distance
@@ -132,63 +169,85 @@ class aircraft:
                     s_target = 0.1
             v_target = plane.v
             v_limit = plane.v
-            if self.par_avoid:                                                      # check of there already is an avoidence operation started
-                if v_limit < self.par_avoid['v_limit']:                             # check if this avoidence manouver had a lower speed
-                    self.par_avoid['v_limit'] = v_limit                             # set avoidence limit speed
-                    self.par_avoid['v_target'] = v_target                           # set avoidence target speed (almost zero to regain seperation)
-                    self.par_avoid['s_target'] = s_target                           # set avoidence target distance (almost zero since direct action)                
-            else:                                                                   # if no avoidence operation is started
-                self.par_avoid['v_limit'] = v_limit                                 # set avoidence limit speed
-                self.par_avoid['v_target'] = v_target                               # set avoidence target speed (almost zero to regain seperation)
-                self.par_avoid['s_target'] = s_target                               # set avoidence target distance (almost zero since direct action)
+            # if self.par_avoid:                                                      # check of there already is an avoidence operation started
+            #     if v_limit < self.par_avoid['v_limit']:                             # check if this avoidence manouver had a lower speed
+            #         self.target_speeds.append({'v_target': v_target, 's_target': s_target})
+            #         # self.par_avoid['v_limit'] = v_limit                             # set avoidence limit speed
+            #         # self.par_avoid['v_target'] = v_target                           # set avoidence target speed (almost zero to regain seperation)
+            #         # self.par_avoid['s_target'] = s_target                           # set avoidence target distance (almost zero since direct action)
+            # else:                                                                   # if no avoidence operation is started
+            self.target_speeds.append({'v_target': v_target, 's_target': s_target})
+                # self.par_avoid['v_limit'] = v_limit                                 # set avoidence limit speed
+                # self.par_avoid['v_target'] = v_target                               # set avoidence target speed (almost zero to regain seperation)
+                # self.par_avoid['s_target'] = s_target                               # set avoidence target distance (almost zero since direct action)
         return brake
 
     #check if there are new commands given
     def check_newcommands(self,v_max,brake,dt):
-        if len(self.op) == 1:                               # check if there is a command
-            for command in self.op:                         # check for each command
-                if command.status == 1:                     # if command status = 'send'
-                    command.status = command.status + 2     # make command status = 'received'
-                    self.process_command(command,v_max,dt)  # process the given command
-        elif len(self.op) == 0:                             # whenever there are no commands, determine own speed and heading
-            self.heading = self.update_heading()            # update heading according to target
-            self.v_target = False                           # Empty target speed
-            self.s_target = False                           # Empty target distance
-            self.check_speed(v_max,brake,dt)                # update speed
+        hasCommand = False
+        for command in self.op:
+            if command.status == 1:                     # if command status = 'send'
+                command.status = command.status + 2     # make command status = 'received'
+                self.target_speeds.append(self.process_command(command,v_max,dt))  # process the given command
+        return hasCommand
+
+        # if len(self.op) == 1:                               # check if there is a command
+        #     for command in self.op:                         # check for each command
+        #         if command.status == 1:                     # if command status = 'send'
+        #             command.status = command.status + 2     # make command status = 'received'
+        #             self.process_command(command,v_max,dt)  # process the given command
+        # elif len(self.op) == 0:                             # whenever there are no commands, determine own speed and heading
+        #     self.heading = self.update_heading()            # update heading according to target
+        #     self.v_target = False                           # Empty target speed
+        #     self.s_target = False                           # Empty target distance
+        #     self.check_speed(v_max,brake,dt)                # update speed
+        # return hasCommand
 
     # process given commands
     def process_command(self, command,v_max,dt):
         if command.type == 'heading':                           # if command is a heading command
             distance = command.par['distance']                  # distance at which heading should be changed (given in the command)
             turn_angle = command.par['turn_angle']              # turn angle of the heading change (give in the command, can be zero)
-            self.heading_command(distance,turn_angle,v_max,dt)  # determine operation necessary for executing the command 
-        elif command.type == 'speed':                           # if command is a speed command (not yet implemented)
-            self.speed_command(distance,v_target)               # determine operation necessary for executing the command 
+            return self.heading_command(distance,turn_angle,v_max,dt)  # determine operation necessary for executing the command
+        elif command.type == 'speed':                           # if command is a speed command
+            distance = command.par['distance']                  # distance at which speed should be changed (given in the command)
+            v_target = command.par['v_target']                # commanded speed (not yet implemented)
+            return self.speed_command(distance,v_target)               # determine operation necessary for executing the command
 
     #determine operation for heading command
     def heading_command(self,distance,turn_angle,v_max,dt):
         par_command = {}                                        # empty operation parameters
         if -0.03*pi < turn_angle < 0.03*pi or  0.97*pi < turn_angle < 1.01*pi or -0.97*pi > turn_angle > -1.01*pi: #if turn angle is smaller then 5 degrees
-            self.par_command['v_target'] = v_max                # operation target speed is maximum speed
-            self.par_command['s_target'] = 0.1                  # operation should start immediately (no speed/heading changes)
-            self.v_target = self.par_command['v_target']        # set aircraft target speed to operation target speed
-            self.s_target = self.par_command['s_target']        # set aircraft target distance to operation target distance
+            par_command.update({'v_target': v_max})              # operation target speed is maximum speed
+            par_command.update({'s_target': distance})                # operation should start immediately (no speed/heading changes)
+            # self.v_target = self.par_command['v_target']        # set aircraft target speed to operation target speed
+            # self.s_target = self.par_command['s_target']        # set aircraft target distance to operation target distance
         elif 0.47*pi < turn_angle < 0.53*pi or -0.47*pi > turn_angle > -0.53*pi or 1.47*pi < turn_angle < 1.53*pi or -1.47*pi > turn_angle > -1.53*pi: #if turn angle is smaller then 5 degrees
-            self.par_command['v_target'] = 0.5144 * int(data[self.type][2]) # operation target speed is maximum turning speed
-            self.v_target = self.par_command['v_target']        # set aircraft target speed to operation target speed
-            dcc_dist = 0.5*(self.v_target-v_max)**2/self.dcc + v_max*abs(self.v_target-v_max)/self.dcc #calculate the maximal distance needed to deccelerate
-            tot_dist = distance                                 # distance at which the operation should be completed
-            self.par_command['s_target'] = tot_dist - dcc_dist  # operation target distance is the distance until it needs to decelerate
-            self.s_target = self.par_command['s_target']        # set aircraft target distance to operation target distance
+            par_command.update({'v_target': 0.5144 * int(data[self.type][2])}) # operation target speed is maximum turning speed
+            # self.v_target = self.par_command['v_target']        # set aircraft target speed to operation target speed
+
+            # Deceleration decision is handeled by decision making, just pass target distance
+            # dcc_dist = 0.5*(self.v_target-v_max)**2/self.dcc + v_max*abs(self.v_target-v_max)/self.dcc #calculate the maximal distance needed to deccelerate
+            # tot_dist = distance                                 # distance at which the operation should be completed
+            # par_command.update({'s_target': (tot_dist - dcc_dist)})  # operation target distance is the distance until it needs to decelerate
+            #
+            par_command.update({'s_target': distance})  # operation target distance is the distance until it needs to decelerate
+
+            # self.s_target = self.par_command['s_target']        # set aircraft target distance to operation target distance
         else:                                                   # if the command is unclear:
-            self.par_command['v_target'] = self.v_limit         # operation target speed is speed limit
-            self.par_command['s_target'] = 0.1                  # operation should start immediately (no speed/heading changes)
-            self.v_target = self.par_command['v_target']        # set aircraft target speed to operation target speed
-            self.s_target = self.par_command['s_target']        # set aircraft target distance to operation target distance
+            print 'the weird one fired' # TODO This is weird!
+            par_command.update({'v_target': self.v_limit})         # operation target speed is speed limit
+            par_command.update({'s_target': 0.1})                  # operation should start immediately (no speed/heading changes)
+            # self.v_target = self.par_command['v_target']        # set aircraft target speed to operation target speed
+            # self.s_target = self.par_command['s_target']        # set aircraft target distance to operation target distance
+        return par_command
 
     #determine operation for speed command            
     def speed_command(self,distance,v_target):
-        self.v_target = v_target
+        par_command = {}
+        par_command.update({'v_target': v_target})
+        par_command.update({'s_target': distance})
+        return par_command
 
     #checks if the collision avoidence or the command is the minimum speed
     def check_minimumspeed(self,brake,v_max):
@@ -213,47 +272,51 @@ class aircraft:
                 self.v_target = v_max
                 self.s_target = 0.1
 
-    #execute commands given to this aircraft this timestep
-    def execute(self,v_max,brake,dt): 
-        dcc_dist = 1.5*(v_max)**2/self.dcc          # calculate the maximum distance needed to deccelerate
-        if not brake and self.s_target > dcc_dist:  # when the plane doesn't have to brake and it still has some distance to taxi until target speed needs to be achieved
-            if self.v < v_max:
-                new_speed = self.v + dt * (float(data[self.type][4])*0.51444)   # accelerate to maximum speed
-                if new_speed > v_max:
-                    new_speed = v_max
-                self.update_speed(new_speed)
-            self.s_target = self.s_target - self.v*dt
-        elif self.s_target < v_max*dt or self.s_target == False:  #if no target distance/distance is reached, change speed
-            self.check_speed(v_max,brake,dt)
-        else: 
-            self.s_target = self.s_target - self.v*dt
+    # #execute commands given to this aircraft this timestep
+    # def execute(self,v_max,brake,dt):
+    #     dcc_dist = 1.5*(v_max)**2/self.dcc          # calculate the maximum distance needed to deccelerate
+    #     if not brake and self.s_target > dcc_dist:  # when the plane doesn't have to brake and it still has some distance to taxi until target speed needs to be achieved
+    #         if self.v < v_max:
+    #             new_speed = self.v + dt * (float(data[self.type][4])*0.51444)   # accelerate to maximum speed
+    #             if new_speed > v_max:
+    #                 new_speed = v_max
+    #             self.update_speed(new_speed)
+    #         self.s_target = self.s_target - self.v*dt
+    #     elif self.s_target < v_max*dt or self.s_target == False:  #if no target distance/distance is reached, change speed
+    #         self.check_speed(v_max,brake,dt)
+    #     else:
+    #         self.s_target = self.s_target - self.v*dt
   
     # update speed
-    def check_speed(self,v_max,brake,dt):
-        if self.v_target == False:
-            if self.v != v_max:
-                new_speed = self.v + dt * (float(data[self.type][4])*0.51444)   # accelerate to maximum speed
-                if new_speed > v_max:
-                    new_speed = v_max
-                self.update_speed(new_speed)
-        elif self.v < self.v_target:
-            new_speed = self.v + dt * (float(data[self.type][4])*0.51444)       # accelerate to target speed
-            if new_speed > self.v_target:
-                self.v = self.v_target
-                self.update_speed(self.v_target)
-            else:
-                self.update_speed(new_speed)
-        elif self.v > self.v_target:
-            new_speed = self.v - dt * (float(data[self.type][3])*0.51444)       # deccelerate to target speed
-            if new_speed < self.v_target:
-                self.v = self.v_target
-                self.update_speed(self.v_target)
-            else:
-                self.update_speed(new_speed)
+    # def check_speed(self,v_max,brake,dt):
+    #     if self.v_target == False:
+    #         if self.v != v_max:
+    #             new_speed = self.v + dt * (float(data[self.type][4])*0.51444)   # accelerate to maximum speed
+    #             if new_speed > v_max:
+    #                 new_speed = v_max
+    #             self.update_speed(new_speed)
+    #     elif self.v < self.v_target:
+    #         new_speed = self.v + dt * (float(data[self.type][4])*0.51444)       # accelerate to target speed
+    #         if new_speed > self.v_target:
+    #             self.v = self.v_target
+    #             self.update_speed(self.v_target)
+    #         else:
+    #             self.update_speed(new_speed)
+    #     elif self.v > self.v_target:
+    #         new_speed = self.v - dt * (float(data[self.type][3])*0.51444)       # deccelerate to target speed
+    #         if new_speed < self.v_target:
+    #             self.v = self.v_target
+    #             self.update_speed(self.v_target)
+    #         else:
+    #             self.update_speed(new_speed)
 
     # update speed
-    def update_speed(self,new_speed):
-        self.v = new_speed
+    def update_speed(self,dt):
+        new_speed = self.v - (dt*self.deceleration)
+        if new_speed >= 0.000000000000001:
+            self.v = new_speed
+        else:
+            self.v = 0.000000000000001
                 
     # update hading
     def update_heading(self):
@@ -265,7 +328,8 @@ class aircraft:
         self.atc[1] = new_atc
 
     # Update positions using velocity and heading (heading is obtained from ATC)
-    def update_pos(self,dt):                                           
+    def update_pos(self,dt):
+        # self.v = self.v - (dt*self.deceleration)
         if self.heading == False or self.heading == None: #if no heading given, determine heading
             self.update_heading()
         self.x_pos = self.x_pos + self.v * dt * cos(self.heading)
