@@ -74,7 +74,7 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
         t_stop_total,plane_speed = update_aircraft(ATC_list,plane_speed,t_stop_total,dt,separation,v_max,t)
         #if True, run map
         if Map == True:
-            running = map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X_waypoint,Y_waypoint,wp_database,wpl_database)
+            running = map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X_waypoint,Y_waypoint,wp_database,wpl_database, taxiwayGraph)
         if t>= t_sim:
             running = False
 

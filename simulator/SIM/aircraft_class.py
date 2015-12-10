@@ -76,7 +76,7 @@ class aircraft:
         # print str(self.id) + ': ' + str(self.target_speeds) + ', which is a needed deceleration of: ' + str(needed_deceleration)
         if needed_deceleration >= self.comfort_deceleration:
             if needed_deceleration < self.max_deceleration:
-                print str(self.id) + ' must decelerate! Current speed = ' + str(self.v)
+                # print str(self.id) + ' must decelerate! Current speed = ' + str(self.v)
                 self.deceleration = needed_deceleration
             else:
                 print str(self.id) + ' must decelerate at max! Current speed = ' + str(self.v)

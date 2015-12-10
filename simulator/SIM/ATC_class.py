@@ -63,7 +63,10 @@ class ATC:
                      self.remove_plane(plane)
                      return
             else:
-                self.plane_handoff(ATC_list,plane,t)
+                if plane.op[0].par.has_key('next_atc') and (plane.op[0].par['next_atc'] != self.id):
+                    self.plane_handoff(ATC_list,plane,t) #TODO fix issue #16
+                else:
+                    print 'Plane ' + str(plane.id) + ', at ATC ' + str(self.id) + 'needs a new ATC!'
 #         if plane.op == []:
 #             self.plan_operation(self.type,ATC_list, plane, graph,t)
 #             if self.type == 1:  #check to which type of ATC the aircraft is assigned
@@ -115,7 +118,7 @@ class ATC:
             plane.op.append(plane_command)
         
     def plane_handoff(self,ATC_list,plane,t):
-        next_atc = plane.op[0].par['next_atc']
+        next_atc = plane.op[0].par['next_atc'] #TODO fix issue #16
         plane.op = []
         plane.par_avoid = {}
         plane.par_command = {}
