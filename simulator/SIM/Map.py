@@ -35,15 +35,46 @@ def map_initialization(wp_database):
         rectlist.append(piclist[i].get_rect())
     return reso, scr, scrrect, plane_pic, piclist, X_waypoint, Y_waypoint
     
-def map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X_waypoint,Y_waypoint,wp_database,wpl_database):
+def map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X_waypoint,Y_waypoint,wp_database,wpl_database,graph):
     pg.draw.rect(scr,(255,255,255),scrrect)
+    # draw links
     for i in xrange (len(wpl_database)):
-        wp_map_x_1 = int((float(wp_database[wpl_database[i][0]][1]) + r)/ (2*r) * reso[0])
-        wp_map_y_1 = int((float(wp_database[wpl_database[i][0]][2]) - r)/ (2 * r) *reso[1]) * -1
-        wp_map_x_2 = int((float(wp_database[wpl_database[i][1]][1]) + r)/ (2*r) * reso[0])
-        wp_map_y_2 = int((float(wp_database[wpl_database[i][1]][2]) - r)/ (2 * r) *reso[1]) * -1
+        source = wpl_database[i][0]
+        target = wpl_database[i][1]
+        wp_map_x_1 = int((float(wp_database[source][1]) + r)/ (2*r) * reso[0])
+        wp_map_y_1 = int((float(wp_database[source][2]) - r)/ (2 * r) *reso[1]) * -1
+        wp_map_x_2 = int((float(wp_database[target][1]) + r)/ (2*r) * reso[0])
+        wp_map_y_2 = int((float(wp_database[target][2]) - r)/ (2 * r) *reso[1]) * -1
         pg.draw.line(scr, (  0,   0, 255), (wp_map_x_1, wp_map_y_1), (wp_map_x_2, wp_map_y_2), 1)
-#    pg.draw.circle(scr,(255,0,0),(reso[0]/2,reso[1]/2),reso[0]/2, 3)
+    # draw link denstiy
+    for key,value in graph.adjacency_iter():
+        for inner_key,inner_value in value.items():
+            density_string = str(inner_value['density'])
+
+            center_x = wp_database[key][1] + (wp_database[inner_key][1]-wp_database[key][1])/2
+            center_y = wp_database[key][2] + (wp_database[inner_key][2]-wp_database[key][2])/2
+            center_x = int((float(center_x) + r)/ (2*r) * reso[0])
+            center_y = int((float(center_y) - r)/ (2 * r) *reso[1]) * -1
+
+            font = pg.font.Font(None, 14)
+
+            if wp_database[key][2] == wp_database[inner_key][2]:
+                y_add = 10
+                x_add = 0
+            else:
+                y_add = 0
+                x_add = 10
+
+            if inner_key>key:
+                y_add = -y_add
+                x_add = -x_add
+
+            text = font.render(density_string, 1, (10, 10, 10))
+            textpos = text.get_rect()
+            textpos.centerx = center_x + x_add
+            textpos.centery = center_y + y_add
+            scr.blit(text, textpos)
+    # draw aircraft
     for atc in ATC_list:
         for plane in atc.locp:
             deg = int(degrees(plane.heading)-90)
@@ -53,7 +84,7 @@ def map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X
             rectlist[deg].centerx = plane_map_x
             rectlist[deg].centery = plane_map_y
             scr.blit(piclist[deg],rectlist[deg])
-        
+    # draw waypoint names
     for i in xrange (len(wp_database)):
         wp_map_x = int((float(wp_database[i][1]) + r)/ (2*r) * reso[0])
         wp_map_y = int((float(wp_database[i][2]) - r)/ (2 * r) *reso[1]) * -1
@@ -62,7 +93,7 @@ def map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X
         text = font.render(str(i), 1, (10, 10, 10))
         textpos = text.get_rect()
         textpos.centerx = wp_map_x+10
-        textpos.centery = wp_map_y
+        textpos.centery = wp_map_y+10
         scr.blit(text, textpos)
 
 #        pg.draw.circle(scr, (255,0,0), (int((X_waypoint[i]+r) / (2*r) * reso[0]), int(((Y_waypoint[i]-r) / (2 * r) *reso[1]) * -1)), 3)
