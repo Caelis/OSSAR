@@ -81,12 +81,12 @@ def update_dijsktra(ATC_list,graph,seperation,v_max): #this function updates the
 
     return graph
 
-def update(d, u):
-    # update nested dictionary "d" with vaule pair "u" (http://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth)
-    for k, v in u.iteritems():
-        if isinstance(v, collections.Mapping):
-            r = update(d.get(k, {}), v)
-            d[k] = r
-        else:
-            d[k] = u[k]
-    return d
+# def update(d, u):
+#     # update nested dictionary "d" with vaule pair "u" (http://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth)
+#     for k, v in u.iteritems():
+#         if isinstance(v, collections.Mapping):
+#             r = update(d.get(k, {}), v)
+#             d[k] = r
+#         else:
+#             d[k] = u[k]
+#     return d
