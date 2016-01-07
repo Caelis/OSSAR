@@ -39,48 +39,54 @@ class ATC:
         self.y_handoff = y_handoff      # y-coordinate at which a aircraft should be handed over
         self.throughput = False         # thoughput of ATC
 
+    # check if commands for the plane are necessary and update planned operation
     def update(self,ATC_list,runway_list,v_max,graph,dt,t):
-        # check if commands for the aircraft are necessary
         self.command_check(ATC_list,runway_list,v_max,graph,dt,t)
     
     #check if a plane needs a command
     def command_check(self,ATC_list,runway_list,v_max,graph,dt,t):
         for plane in self.locp:
-            self.create_commands(plane,ATC_list,runway_list,v_max,graph,dt,t)
-
+            # plan operation
+            self.plan_operation(self.type,ATC_list, plane, graph,v_max,dt,t)
+            # is aircraft at handoff point
+            if sqrt((plane.x_pos - self.x_handoff)**2 + (plane.y_pos - self.y_handoff)**2) <= v_max*dt:
+                self.create_commands(plane,ATC_list,runway_list,v_max,graph,dt,t)
+        
     #create commands for each plane if necessary
     def create_commands(self,plane,ATC_list,runway_list,v_max,graph,dt,t):
-        # plan operation
-        self.plan_operation(self.type,ATC_list, plane, graph,t)
-        # is aircraft at handoff point
-        if sqrt((plane.x_pos - self.x_handoff)**2 + (plane.y_pos - self.y_handoff)**2) <= v_max*dt:
-            # if I'm an runway/gate
-            if self.type == 4:
-                 occupance  = False
-                 # if runway available
-                 if occupance == False:
-                     # remove aircraft from sim
-                     self.remove_plane(plane)
-                     return
+    # if I'm an runway/gate
+        if self.type == 4:
+             occupance  = False #TODO runway systems needs to be implemented
+             # if runway available
+             if occupance == False:
+                 # remove aircraft from sim
+                 self.remove_plane(plane)
+                 return
+        else:
+#            self.plane_handoff(ATC_list,plane,t)
+            if plane.stop:
+                print 'plane.stop executed'
+            elif plane.op[0].par.has_key('next_atc') and (plane.op[0].par['next_atc'] == plane.atc[0]):
+                print 'Plane', plane.id, ', at ATC ', self.id, ' made a 180 degree turn!!!'
+                self.plane_handoff(ATC_list,plane,t) #TODO fix issue #16
+            elif plane.op[0].par.has_key('next_atc') and (plane.op[0].par['next_atc'] != self.id):
+                self.plane_handoff(ATC_list,plane,t) #TODO fix issue #16
             else:
-                if plane.op[0].par.has_key('next_atc') and (plane.op[0].par['next_atc'] != self.id):
-                    self.plane_handoff(ATC_list,plane,t) #TODO fix issue #16
-                else:
-                    print 'Plane ' + str(plane.id) + ', at ATC ' + str(self.id) + 'needs a new ATC!'
-#         if plane.op == []:
-#             self.plan_operation(self.type,ATC_list, plane, graph,t)
-#             if self.type == 1:  #check to which type of ATC the aircraft is assigned
-#                 self.plane_handoff(ATC_list,plane,t)
-#             elif self.type == 4:
-#                 if sqrt((plane.x_pos - self.x_handoff)**2 + (plane.y_pos - self.y_handoff)**2) <= v_max*dt:
-# #                    occupance = runway_list[plane.atc_goal].occupance #check wether the runway is clear voor take-off
-#                     occupance  = True
-#                     if occupance == True:
-#                         self.remove_plane(plane)
-#         elif sqrt((plane.x_pos - self.x_handoff)**2 + (plane.y_pos - self.y_handoff)**2) <= v_max*dt: #check wether the aircraft is within range of its next destination ((v_max*dt))
-#             self.plane_handoff(ATC_list,plane,t)
+#                par = {}
+#                par['distance'] = 0.00000001
+#                par['v_target'] = 0.00000001
+#                command_type = 'speed'
+#                plane_command = command(command_type, self.id, plane.id, t, 1, par) #1 = send
+#                plane.op.append(plane_command)
+                self.plan_operation(self.id,ATC_list,plane,graph,v_max,dt,t)
+                print 'Plane ' + str(plane.id) + ', at ATC ' + str(self.id) + 'needs a new ATC!'
+                print 'Plane data: '
+                print 'speed: ', plane.v
+                print 'heading: ', plane.heading
+                print 'original atc: ', plane.atc[0]
+                print 'next atc: ', plane.atc[1]
 
-    def plan_operation(self,atc_type,ATC_list,plane,graph,t):
+    def plan_operation(self,atc_type,ATC_list,plane,graph,v_max,dt,t):
         par = {}
         command_type = 'heading'
         if atc_type == 1 or atc_type == 2:
@@ -88,6 +94,7 @@ class ATC:
             success, path = dijkstra_path(graph,self.id,plane.atc_goal)
             # if solution possible, command new heading/assign ATC
             if success:
+                plane.stop = False
                 # path = shortestpath(graph,self.id,plane.atc_goal) #give the current fastest route using Dijkstra algorithm
                 next_atc = path[1] #selects the next atc
                 new_heading = atan2((int(wp_database[int(next_atc)][2])-(self.y_handoff)), (int(wp_database[int(next_atc)][1])-(self.x_handoff))) #calculate the heading after the operation
@@ -102,10 +109,13 @@ class ATC:
             # Otherwise tell the aircraft to stop immediately
             else:
                 print 'no path found'
-                par['distance'] = 0.00000001
-                par['v_target'] = 0
-                plane_command = command('speed', self.id, plane.id, t, 1, par) #1 = send
-                plane.op.append(plane_command)
+                plane.stop = True
+#                distance = hypot(plane.x_pos-self.x_handoff, plane.y_pos-self.y_handoff) #calculate at which distance the operation should be finished
+#                distance =  distance - 2*v_max*dt
+#                par['distance'] = distance
+#                par['v_target'] = 0.00000001
+#                plane_command = command('speed', self.id, plane.id, t, 1, par) #1 = send
+#                plane.op.append(plane_command)
         if atc_type == 4:
             next_atc = self.id #selects the next atc
             new_heading = atan2((int(wp_database[int(next_atc)][2])-(self.y_handoff)), (int(wp_database[int(next_atc)][1])-(self.x_handoff))) #calculate the heading after the operation
@@ -139,11 +149,14 @@ class ATC:
 
     def add_plane(self,plane):
         self.locp.append(plane)
-    # excute commands and check for collision avoidence
-    # def execute_command(self,separation,v_max,t,dt):
-    #     for plane in self.locp:
-    #         plane.decision_making(separation,v_max,dt)
 
+#    def error_check(self):
+#        if len(self.locp) > 1:
+#            for plane1 in self.locp:
+#                for plane2 in self.locp:
+#                    if plane1 != plane2 and plane1.atc[1] != plane2.atc[1]:
+#                    print 'opposing trafic!!!!!!!!!!!!!!'
+                    
 def create_ATC(wp_database,ATC_list):
     for i in xrange(len(wp_database)):
         ATC_linkdes = [elem for elem in wpl_database if int(elem[0]) == i] #makes a list of all links away from this ATC

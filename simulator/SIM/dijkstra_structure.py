@@ -16,9 +16,7 @@ Output:
 #import modules
 from math import *
 import collections
-
 import networkx as nx
-
 
 #import data
 from data_import import wp_database
@@ -82,15 +80,5 @@ def update_dijsktra(ATC_list,graph,seperation,v_max): #this function updates the
     # print 'to 5 = '+ str(graph[6][5]['weight'])
     # print 'to 7 = '+ str(graph[6][7]['weight'])
     # print 'to 23 = '+ str(graph[6][23]['weight'])
-
+#        print type(graph)
     return graph
-
-# def update(d, u):
-#     # update nested dictionary "d" with vaule pair "u" (http://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth)
-#     for k, v in u.iteritems():
-#         if isinstance(v, collections.Mapping):
-#             r = update(d.get(k, {}), v)
-#             d[k] = r
-#         else:
-#             d[k] = u[k]
-#     return d

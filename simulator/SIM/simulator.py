@@ -77,7 +77,11 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
             running = map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X_waypoint,Y_waypoint,wp_database,wpl_database, taxiwayGraph)
         if t>= t_sim:
             running = False
-
+        
+        #bug fixing:
+#        for atc in ATC_list:
+#            atc.error_check()        
+        
         t = t + dt # update clock
     if Map == True:
         pg.quit()

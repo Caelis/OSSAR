@@ -14,10 +14,10 @@ Input:
 Output:
 """
 #import modules
-import itertools
+#import itertools
 
 #import data
-from data_import import rw_database
+#from data_import import rw_database
 
 class runway:
     def __init__(self,idnumber,runway_throughput):
