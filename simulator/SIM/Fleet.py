@@ -60,26 +60,21 @@ def create_aircraft(idnumber,ATC_list,runway_list,r,v_max,t,dt): #creates aircra
     return idnumber
 
 #loops through all ATC and appends a 
-def ATC_check(ATC_list,runway_list,graph,radar_range,dt,t,v_max):
+def ATC_check(ATC_list,runway_list,graph,radar_range,runway_occupance_time,dt,t,v_max):
     for atc in ATC_list:
-        atc.update(ATC_list,runway_list,v_max,graph,dt,t) # check if commands for the plane are necessary and plan operation
+        atc.update(ATC_list,runway_list,v_max,graph,runway_occupance_time,dt,t) # check if commands for the plane are necessary and plan operation
         aircraft_radar(atc,radar_range)    # check for each aircraft which other plane are within a certain(radar) range
 
 #check for each aircraft which other aircraft are within radar range
 def aircraft_radar(atc,radar_range):
     plane_list = []
-    for plane in atc.locp:          # iterate over all planes in the simulator
+    for plane in atc.locp:          #TODO add planes of next link # iterate over all planes in the simulator
         plane_list.append(plane)    # append plane to plane_list to create list of all planes for radar check
         plane.radar = []            # empty radar list of each plane
     for plane1 in plane_list:       # loop through all planes in the simulator
         for plane2 in plane_list:   # loop through all planes to compare to planes from above loop
             if hypot((plane2.x_pos-plane1.x_pos),(plane2.y_pos-plane1.y_pos)) < radar_range and plane1.id != plane2.id: # When aircrafts are within radarrange(exluding self):
                 plane1.radar.append(plane2) # append plane to plane1.radar for check if avoidence is necessary
-
-# # excute commands and check for collision avoidence
-# def execute_commands(ATC_list,separation,v_max,t,dt):
-#     for atc in ATC_list:
-#         atc.execute_command(separation,v_max,t,dt)
 
 #update each aircrafts position and track simulator variables (t_stop_total)            
 def update_aircraft(ATC_list,plane_speed,t_stop_total,dt,separation,v_max,t):

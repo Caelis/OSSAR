@@ -45,16 +45,17 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
     radar_range = 250
     mean = 3600/spawnrate #mean of aircraft spawning time
     std = 1 #standerd deviation of aircraft spawning time
+    runway_occupance_time = 3600/runway_throughput #time until the next aircraft can take-off/land
     
     #initiating the simulator
     if Map == True:
         reso, scr, scrrect, plane_pic, piclist, X_waypoint, Y_waypoint = map_initialization(wp_database)
-        
+
     # create ATC for each waypoint
     ATC_list = create_ATC(wp_database,ATC_list)
 
     #create all runways
-    idnumber_rw, runway_list = create_runway(idnumber_rw,runway_list,runway_throughput)    
+    idnumber_rw, runway_list = create_runway(idnumber_rw,ATC_list,runway_list)    
     
     # initiate the Dijksta algorithm
     taxiwayGraph0 = initiate_dijkstra(v_max)
@@ -64,10 +65,12 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
         taxiwayGraph = nx.DiGraph(taxiwayGraph0)
         #update Dijkstra structure based on current traffic situation
         taxiwayGraph = update_dijsktra(ATC_list,taxiwayGraph,separation,v_max)
+        #update runways
+        update_runway(runway_list,runway_occupance_time,ATC_list,dt)
         #create new aircraft if nessecary
         t_next_aircraft, create, idnumber = aircraft_interval(t_next_aircraft,idnumber,ATC_list,runway_list,r,v_max,create,mean,std,t,dt)
         #create and execute commands
-        ATC_check(ATC_list,runway_list,taxiwayGraph,radar_range,dt,t,v_max)
+        ATC_check(ATC_list,runway_list,taxiwayGraph,radar_range,runway_occupance_time,dt,t,v_max)
         # excecute all commands
         # execute_commands(ATC_list,separation,v_max,t,dt)
         #update the aicraft position
@@ -77,11 +80,7 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
             running = map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X_waypoint,Y_waypoint,wp_database,wpl_database, taxiwayGraph)
         if t>= t_sim:
             running = False
-        
-        #bug fixing:
-#        for atc in ATC_list:
-#            atc.error_check()        
-        
+
         t = t + dt # update clock
     if Map == True:
         pg.quit()
