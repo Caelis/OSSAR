@@ -22,10 +22,10 @@ from SIM.simulator import *
 '''Configuring the simulator'''
 Map = True              # Activate or deactivate the map
 runs = 1                # number of runs 
-spawnrate = [200]       # rate [aircraft/hour] at which aircraft are added
+spawnrate = [400]       # rate [aircraft/hour] at which aircraft are added
 n_prop = [0]            # degree of propagation
 t_simulated = 3600      # simulation time [s]
-dt = 0.5                # timestep [s]
+dt = 1                # timestep [s]
 runway_throughput = 60  # rate[aircraft/hour] at which aircraft can take-off/land
 
 area = 30               # airspace area

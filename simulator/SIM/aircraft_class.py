@@ -51,13 +51,13 @@ class aircraft:
 
     def update(self,separation,v_max,t,dt):
         this_t_stop = 0
-        if not self.stop:       # if the plane has a goal_atc, continue tp decision making
+        if not self.stop:       # if the plane has a goal_atc, continue to decision making
             self.decision_making(separation,v_max,dt)
         else:                   # if the plane does not have a goal atc, it should stop
             self.deceleration = self.max_deceleration
         self.update_speed(dt)   # update plane speed
         self.update_pos(dt)     # update the position of each aircraf decide to accelerate or deceleratet
-        if self.v < 0.5:        # each time step calculate the total stopping time
+        if self.v < 0.05:        # each time step calculate the total stopping time
             this_t_stop = dt
         return self.v, this_t_stop
 
@@ -65,16 +65,23 @@ class aircraft:
     def decision_making(self,separation,v_max,dt):
         self.target_speeds = []
         self.deceleration = -self.comfort_acceleration         # always accelerate!
-        conflict = True
+#        conflict = True
         #  check for collision
         conflict = self.conflict_avoidance(separation)         # perform a collision avoidanace check for all planes within aircraft range
-        command = self.check_newcommands(v_max,conflict,dt)    # check if new commands were given
+        command = self.check_newcommands(v_max,dt)    # check if new commands were given
         # Here we have 2 boolean variables conflict and command, as well as a dictionary
 
         needed_deceleration = 0     # assume no deceleration needed
         for target_speed in self.target_speeds:
             if target_speed['s_target'] == 0: #if there is target distance = 0
-                commanded_deceleration = -self.comfort_acceleration
+#                print target_speed
+#                if target_speed['v_target'] <= 0.0001:
+#                    print 'command: ', target_speed
+                if target_speed['v_target'] == 0.00001 and self.v == 0:
+                    commanded_deceleration = 0
+                    print 'check'
+                else:
+                    commanded_deceleration = -self.comfort_acceleration #TODO acceleration is not needed when waiting in line
             else:
                 try:
                     commanded_deceleration = (self.v-target_speed['v_target'])/(target_speed['s_target']/self.v) # deceleration based on command
@@ -90,10 +97,6 @@ class aircraft:
             else:
 #                print str(self.id) + ' must decelerate at max! Current speed = ' + str(self.v) 
                 self.deceleration = self.max_deceleration
-
-        # self.check_minimumspeed(conflict,v_max)                # check if the operation speed or avoidence speed is the lowest and set as targetspeed
-        # if len(self.op) != 0 or len(self.par_avoid) != 0:   # if there are commands or if there is no avoidence necessary:
-        #     self.execute(v_max,conflict,dt)                    # execute given commands
 
    # checks all planes the radar has detected, which type of conflict would occure when within seperation
     def conflict_avoidance(self,min_separation):
@@ -115,9 +118,8 @@ class aircraft:
         if self_dist >= plane_dist and plane_separation < min_separation:           # check if seperation is lost
             conflict = True                                                         # plane is following and seperation lost --> conflict = True
             v_target = plane.v                                                      # determine target speed (almost zero to regain seperation if necessary)
-            s_target = 0.00000000001                                                   # determine target distance (almost zero, since direct action)
+            s_target = 0.00001                                                   # determine target distance (almost zero, since direct action)
             self.target_speeds.append({'v_target': v_target, 's_target': s_target})
-            self.stop = True
         return conflict
 
     # determines the necessary avoidence parameters to avoid collision when two planes have the same goal link but do not share the current link
@@ -140,11 +142,12 @@ class aircraft:
 
     # determines the necessary avoidence parameters to avoid collision this plane turns onto other link with planes within seperation distance
     def conflict_avoidence_next(self,conflict,plane,min_separation,self_dist,plane_dist):
-        dcc_dist = 0.5*(plane.v-self.v)**2/self.dcc + self.v*abs(plane.v-self.v)/self.dcc # calculate the distance needed to deccelerate        
+        dcc_dist = 0.5*(plane.v-self.v)**2/self.comfort_deceleration + self.v*abs(plane.v-self.v)/self.comfort_deceleration # calculate the distance needed to deccelerate        
         safe_dist = dcc_dist + min_separation                                       # distance necessary to decelerate and keep seperation   
         if plane_dist < safe_dist:                                                  # if the other planes distance to atc is shorter then safe distance:
             if plane_dist < min_separation:
                 conflict = True
+#                print 'conflict'
                 dist_sep = min_separation - plane_dist
                 s_target = self_dist - (dist_sep + dcc_dist)
                 if s_target <= 0:
@@ -160,7 +163,7 @@ class aircraft:
         return conflict
 
     #check if there are new commands given
-    def check_newcommands(self,v_max,brake,dt):
+    def check_newcommands(self,v_max,dt):
         hasCommand = False
         for command in self.op:
             if command.status == 1:                     # if command status = 'send'

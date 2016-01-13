@@ -19,7 +19,7 @@ disp_link_density = False   # display density of each link
 disp_aircaft_id = False      # display aircraft id number
 disp_waypoint_id = True    # display waypoint id number
 disp_links = True           # display the links between each waypoint
-disp_radar_aircraft = True  # display which other aircraft an aircaft sees
+disp_radar_aircraft = False  # display which other aircraft an aircaft sees
 
 def map_initialization(wp_database):
     pg.init()

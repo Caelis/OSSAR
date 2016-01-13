@@ -172,7 +172,8 @@ class ATC:
                     
 def create_ATC(wp_database,ATC_list):
     for i in xrange(len(wp_database)):
-        ATC_linkdes = [elem for elem in wpl_database if int(elem[0]) == i] #makes a list of all links away from this ATC
-        ATC_linkd = [int(x[1]) for x in ATC_linkdes] # makes a list of all possible destination waypoints
-        ATC_list.append(ATC(wp_database[i][0],ATC_linkd,[],int(wp_database[i][3]),float(wp_database[i][1]),float(wp_database[i][2])))
+        ATC_linkdes1 = [elem for elem in wpl_database if int(elem[0]) == i] #makes a list of all links
+        ATC_linkdes2 = [elem for elem in wpl_database if int(elem[1]) == i] #makes a list of all links
+        ATC_link = ATC_linkdes1 + ATC_linkdes2  
+        ATC_list.append(ATC(wp_database[i][0],ATC_link,[],int(wp_database[i][3]),float(wp_database[i][1]),float(wp_database[i][2])))
     return ATC_list
