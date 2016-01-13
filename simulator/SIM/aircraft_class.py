@@ -113,10 +113,11 @@ class aircraft:
     def conflict_avoidence_link(self,conflict,plane,min_separation,self_dist,plane_dist):
         plane_separation = abs(self_dist - plane_dist)
         if self_dist >= plane_dist and plane_separation < min_separation:           # check if seperation is lost
-            conflict = True                                                         # plane is following and seperation lost --> brake = True
+            conflict = True                                                         # plane is following and seperation lost --> conflict = True
             v_target = plane.v                                                      # determine target speed (almost zero to regain seperation if necessary)
-            s_target = 0                                                      # determine target distance (almost zero, since direct action)
+            s_target = 0.00000000001                                                   # determine target distance (almost zero, since direct action)
             self.target_speeds.append({'v_target': v_target, 's_target': s_target})
+            self.stop = True
         return conflict
 
     # determines the necessary avoidence parameters to avoid collision when two planes have the same goal link but do not share the current link
