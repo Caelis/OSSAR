@@ -16,9 +16,10 @@ piclist = []
 rectlist = []
 
 disp_link_density = False   # display density of each link
-disp_aircaft_id = True      # display aircraft id number
+disp_aircaft_id = False      # display aircraft id number
 disp_waypoint_id = True    # display waypoint id number
 disp_links = True           # display the links between each waypoint
+disp_radar_aircraft = True  # display which other aircraft an aircaft sees
 
 def map_initialization(wp_database):
     pg.init()
@@ -92,6 +93,7 @@ def map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X
             rectlist[deg].centery = plane_map_y
             scr.blit(piclist[deg],rectlist[deg])
             
+            #diplay aircraft id
             if disp_aircaft_id:
                 id_string = str(plane.id)
                 font = pg.font.Font(None, 14)
@@ -103,7 +105,26 @@ def map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X
                 textpos = text.get_rect()
                 textpos.centerx = center_x_id
                 textpos.centery = center_y_id
-                scr.blit(text, textpos)       
+                scr.blit(text, textpos)
+            
+            #siplay aircraft radar visibilty
+            if disp_radar_aircraft:
+                id_string_a = []
+                for plane_radar in plane.radar:
+                    id_string_a.append(plane_radar.id)
+                id_string_a = str(id_string_a)
+                id_string_b = id_string_a.translate(None,'[')
+                id_string = id_string_b.translate(None,']')
+                font = pg.font.Font(None, 14)
+                text = font.render(id_string, 1, (10, 10, 10))
+                center_x_id = plane.x_pos + 75
+                center_y_id = plane.y_pos - 75      
+                center_x_id = int((float(center_x_id) + r)/ (2*r) * reso[0])
+                center_y_id = int((float(center_y_id) - r)/ (2 * r) *reso[1]) * -1
+                textpos = text.get_rect()
+                textpos.centerx = center_x_id
+                textpos.centery = center_y_id
+                scr.blit(text, textpos)                
             
     # draw waypoint names
     for i in xrange (len(wp_database)):

@@ -76,7 +76,10 @@ class aircraft:
             if target_speed['s_target'] == 0: #if there is target distance = 0
                 commanded_deceleration = -self.comfort_acceleration
             else:
-                commanded_deceleration = (self.v-target_speed['v_target'])/(target_speed['s_target']/self.v) # deceleration based on command
+                try:
+                    commanded_deceleration = (self.v-target_speed['v_target'])/(target_speed['s_target']/self.v) # deceleration based on command
+                except ZeroDivisionError:
+                    commanded_deceleration = 0
             if commanded_deceleration > needed_deceleration:
                 needed_deceleration = commanded_deceleration
         # print str(self.id) + ': ' + str(self.target_speeds) + ', which is a needed deceleration of: ' + str(needed_deceleration)
@@ -112,13 +115,16 @@ class aircraft:
         if self_dist >= plane_dist and plane_separation < min_separation:           # check if seperation is lost
             conflict = True                                                         # plane is following and seperation lost --> brake = True
             v_target = plane.v                                                      # determine target speed (almost zero to regain seperation if necessary)
-            s_target = 0.00001                                                      # determine target distance (almost zero, since direct action)
+            s_target = 0                                                      # determine target distance (almost zero, since direct action)
             self.target_speeds.append({'v_target': v_target, 's_target': s_target})
         return conflict
 
     # determines the necessary avoidence parameters to avoid collision when two planes have the same goal link but do not share the current link
     def conflict_avoidence_goal(self,conflict,plane,min_separation,self_dist,plane_dist):
-        self_arr_time = self_dist/self.v                                            # determine own time to reach goal atc (t = distance/speed)
+        try:
+            self_arr_time = self_dist/self.v                                            # determine own time to reach goal atc (t = distance/speed)
+        except ZeroDivisionError:
+            self_arr_time = 0
         try:                                         # determine other plane's time to reach goal atc
             plane_arr_time = plane_dist/plane.v
         except ZeroDivisionError:
@@ -258,10 +264,10 @@ class aircraft:
     # update speed
     def update_speed(self,dt):
         new_speed = self.v - (dt*self.deceleration)
-        if new_speed >= 0.000000000000001:
+        if new_speed > 0:
             self.v = new_speed
         else:
-            self.v = 0.000000000000001
+            self.v = 0
                 
     # update hading
     def update_heading(self):

@@ -48,7 +48,7 @@ class ATC:
     def command_check(self,ATC_list,runway_list,v_max,graph,runway_occupance_time,dt,t):
         for plane in self.locp:
             # plan operation
-            self.plan_operation(self.type,ATC_list, plane, graph,v_max,dt,t)
+            self.plan_operation(self.type,ATC_list,runway_list,plane,graph,v_max,dt,t)
             # is aircraft at handoff point
             if sqrt((plane.x_pos - self.x_handoff)**2 + (plane.y_pos - self.y_handoff)**2) <= v_max*dt:
                 self.create_commands(plane,ATC_list,runway_list,v_max,graph,runway_occupance_time,dt,t)
@@ -85,19 +85,38 @@ class ATC:
 #                print 'plane.stop executed'
                 pass
             elif plane.op[0].par.has_key('next_atc') and (plane.op[0].par['next_atc'] == plane.atc[0]):
-                print 'Plane', plane.id, ', at ATC ', self.id, ' made a 180 degree turn!!!'
+                print 'Plane', plane.id, ', at ATC ', self.id, ' made a 180 degree turn!'
                 self.plane_handoff(ATC_list,plane,t)
             elif plane.op[0].par.has_key('next_atc') and (plane.op[0].par['next_atc'] != self.id):
                 self.plane_handoff(ATC_list,plane,t)
             else:
-                self.plan_operation(self.id,ATC_list,plane,graph,v_max,dt,t)
+                self.plan_operation(self.id,ATC_list,runway_list,plane,graph,v_max,dt,t)
                 print 'Plane ' + str(plane.id) + ', at ATC ' + str(self.id) + 'needs a new ATC!'
 
-    def plan_operation(self,atc_type,ATC_list,plane,graph,v_max,dt,t):
+    def plan_operation(self,atc_type,ATC_list,runway_list,plane,graph,v_max,dt,t):
         par = {}
         command_type = 'heading'
         if atc_type == 1 or atc_type == 2:
             # run Dijkstra and see if solution possible
+#            runway = runway_list[plane.atc_goal]
+#            success = False
+#            length = False
+#            i = 0
+#            for atc_id in runway.nodes: #check for the shortest route to the runway
+#                success_dijk, path_dijk, length_dijk = dijkstra_path(graph,self.id,atc_id)
+##                print 'at time ', t, ':'
+##                print 'the length to atc ',atc_id,' is: ', length_dijk[atc_id]
+##                print 'succes was: ', success_dijk
+##                print 'path is: ', path_dijk
+#                if i == 0:
+#                    success = success_dijk
+#                    path = path_dijk
+#                    length = length_dijk[atc_id]
+#                elif success_dijk and length_dijk[atc_id] < length:
+#                    success = success_dijk
+#                    length = length_dijk[atc_id]
+#                    path = path_dijk
+#                i = i + 1
             success, path = dijkstra_path(graph,self.id,plane.atc_goal)
             # if solution possible, command new heading/assign ATC
             if success:
