@@ -49,7 +49,7 @@ def initiate_dijkstra(v_max):
     return dijk
 
 def update_dijsktra(ATC_list,graph,seperation,v_max): #this function updates the structure to the current situation
-    for atc in ATC_list: #create density dictionary
+    for atc in ATC_list: #create density dictionary # TODO rather do this on plane handoff.
         for plane in atc.locp:
             if plane.atc[0] and plane.atc[1]: # TODO still buggy!
                 # only update density if "postive" density is >=0
@@ -63,7 +63,7 @@ def update_dijsktra(ATC_list,graph,seperation,v_max): #this function updates the
             max_density = distance/seperation
             if density > max_density:
                 speed = 0
-            elif density > 0.5* max_density:
+            elif density < 0.5* max_density: #TODO make the the 0.5 a variable that is set up in the simulator setup
                 speed = v_max
             else:
                 if density >= 0:
