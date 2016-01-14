@@ -115,7 +115,12 @@ class aircraft:
     # determines the necessary avoidence parameters to avoid collision when two planes share the current link
     def conflict_avoidence_link(self,conflict,plane,min_separation,self_dist,plane_dist):
         plane_separation = abs(self_dist - plane_dist)
-        if self_dist >= plane_dist and plane_separation < min_separation:           # check if seperation is lost
+        if self_dist >= plane_dist and plane_separation < (min_separation-25):
+            conflict = True                                                         # plane is following and seperation lost --> conflict = True
+            v_target = 0                                                      # determine target speed (almost zero to regain seperation if necessary)
+            s_target = 0.00001                                                   # determine target distance (almost zero, since direct action)
+            self.target_speeds.append({'v_target': v_target, 's_target': s_target})
+        elif self_dist >= plane_dist and plane_separation < min_separation:           # check if seperation is lost
             conflict = True                                                         # plane is following and seperation lost --> conflict = True
             v_target = plane.v                                                      # determine target speed (almost zero to regain seperation if necessary)
             s_target = 0.00001                                                   # determine target distance (almost zero, since direct action)
@@ -127,16 +132,23 @@ class aircraft:
         try:
             self_arr_time = self_dist/self.v                                            # determine own time to reach goal atc (t = distance/speed)
         except ZeroDivisionError:
-            self_arr_time = 0
+            self_arr_time = 1001
         try:                                         # determine other plane's time to reach goal atc
             plane_arr_time = plane_dist/plane.v
         except ZeroDivisionError:
             plane_arr_time = 1000
         self_dist_future = (self_arr_time-plane_arr_time)*self.v                    # distance until next plane when the next plane is at intersection
         if self_dist_future >= 0 and self_dist_future < min_separation:             # check if the other plane will be at the intersection earlier and the distance is smaller then separation min
+            max_dcc_dist = 1.5*(self.v)**2/self.comfort_deceleration
+            distance_constant_v = self_dist - max_dcc_dist
+            v_target = distance_constant_v/plane_arr_time
+            s_target = 0
+            self.target_speeds.append({'v_target': v_target, 's_target': s_target})
             conflict = True                                                        # plane is second at the intersection and seperation lost --> brake = True
+            
+#            print 'check'
             v_target = plane.v                                                  # speed when other plane is at the intersection should be the same as that plane's speed
-            s_target = 0                                                      # determine target distance (almost zero, since direct action)
+            s_target = self_dist + plane_dist - min_separation                                                      # determine target distance (almost zero, since direct action)
             self.target_speeds.append({'v_target': v_target, 's_target': s_target})
         return conflict
 
