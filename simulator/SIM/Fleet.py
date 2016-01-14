@@ -93,7 +93,7 @@ def aircraft_list(atc,plane_list):
         if plane.atc[0] not in occupied_links:
             occupied_links.append(plane.atc[0])
             link_planes.append(plane)
-    if len(occupied_links) == possible_handovers and possible_handovers > 1:
+    if len(occupied_links) == possible_handovers and possible_handovers > 1: #TODO temporary solution
         print 'deadlock at atc: ', atc.id
         print 'occupied_links: ', occupied_links
         print 'possible_handovers', possible_handovers

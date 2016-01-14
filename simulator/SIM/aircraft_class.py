@@ -144,20 +144,23 @@ class aircraft:
     def conflict_avoidence_next(self,conflict,plane,min_separation,self_dist,plane_dist):
         dcc_dist = 0.5*(plane.v-self.v)**2/self.comfort_deceleration + self.v*abs(plane.v-self.v)/self.comfort_deceleration # calculate the distance needed to deccelerate        
         safe_dist = dcc_dist + min_separation                                       # distance necessary to decelerate and keep seperation   
-        if plane_dist < safe_dist:                                                  # if the other planes distance to atc is shorter then safe distance:
+        plane_dist = hypot((plane.x_pos-self.x_des), (plane.y_pos-self.y_des))    # determine other plane's distance to/from atc
+        if plane_dist >= safe_dist:
+            conflict = False
+        elif plane_dist < safe_dist:                                                  # if the other planes distance to atc is shorter then safe distance:
             if plane_dist < min_separation:
                 conflict = True
 #                print 'conflict'
-                dist_sep = min_separation - plane_dist
+                dist_sep = min_separation - plane_dist #distance at which to brake at current link to remain seperation on next link
                 s_target = self_dist - (dist_sep + dcc_dist)
                 if s_target <= 0:
-                    s_target = 0
+                    s_target = 0.00001
             else:
                 conflict = True
                 dist_sep = plane_dist - min_separation
-                s_target = self_dist - (dcc_dist - (plane_dist - dist_sep))
+                s_target = (self_dist + plane_dist) - (dcc_dist + min_separation)
                 if s_target <= 0:
-                    s_target = 0
+                    s_target = 0.0001
             v_target = plane.v
             self.target_speeds.append({'v_target': v_target, 's_target': s_target})
         return conflict
