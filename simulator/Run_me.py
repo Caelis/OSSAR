@@ -25,7 +25,7 @@ runs = 1                # number of runs
 spawnrate = [200]       # rate [aircraft/hour] at which aircraft are added
 n_prop = [0]            # degree of propagation
 t_simulated = 3600      # simulation time [s]
-dt = 0.8                # timestep [s]
+dt = 1                # timestep [s]
 runway_throughput = 60  # rate[aircraft/hour] at which aircraft can take-off/land
 
 area = 30               # airspace area
@@ -51,9 +51,9 @@ for i in range(len(spawnrate)):
             throughput_list.append(throughput)
             t_stop_total_list.append(t_stop_total)
             v_average_list.append(v_average)
-            print "total stopping time: ",t_stop_total           
+            print "total stopping time: ",t_stop_total,' [s]'
             print "throughput: ", throughput
-            print "v_average: ",v_average            
+            print "v_average: ",v_average,' [m/s]'
             
             trial = trial + 1
             print "run",trial," finished..."

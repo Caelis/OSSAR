@@ -46,6 +46,7 @@ def create_aircraft(idnumber,ATC_list,runway_list,r,v_max,t,dt): #creates aircra
 #        y_coor = wp_database[node][2]
 #        goal.append([x_coor,y_coor])
     ATC_runway = int(rnd.choice(rw_database))           # Random select a runway entrance of the aircraft
+#    ATC_runway = rnd.choice(runway_list).id           # Random select a runway for the aircraft
     x2 = float(wp_database[ATC_gate][1])                # goal x-coordinate
     y2 = float(wp_database[ATC_gate][2])                # goal y-coordinate
     speed = 30*0.5144                                   # choose starting speed
@@ -59,26 +60,45 @@ def create_aircraft(idnumber,ATC_list,runway_list,r,v_max,t,dt): #creates aircra
     idnumber =  idnumber + 1
     return idnumber
 
-def ATC_check(ATC_list,runway_list,graph,radar_range,dt,t,v_max):
-    for atc in ATC_list:
-        atc.update(ATC_list,runway_list,v_max,graph,dt,t)
-        aircraft_radar(atc,radar_range)    #check for each aircraft which other aircraft are within radar range
-
-#check for each aircraft which other aircraft are within radar range
-def aircraft_radar(atc,radar_range):
+#loops through all ATC and appends a 
+def ATC_check(ATC_list,runway_list,graph,radar_range,runway_occupance_time,dt,t,v_max):
     plane_list = []
-    for plane in atc.locp:          # iterate over all planes in the simulator
-        plane_list.append(plane)    # append plane to plane_list to create list of all planes for radar check
-        plane.radar = []            # empty radar list of each plane
+    for atc in ATC_list:
+#        if atc.id == 19:
+#            print 'at time t: '
+#            for plane in atc.locp:
+#                print 'plane ', plane.id, 'has v ',plane.v, ' and deceleration: ', plane.deceleration
+        atc.update(ATC_list,runway_list,v_max,graph,runway_occupance_time,dt,t) # check if commands for the plane are necessary and plan operation
+        aircraft_list(atc,plane_list)    # check for each aircraft which other plane are within a certain(radar) range
     for plane1 in plane_list:       # loop through all planes in the simulator
         for plane2 in plane_list:   # loop through all planes to compare to planes from above loop
             if hypot((plane2.x_pos-plane1.x_pos),(plane2.y_pos-plane1.y_pos)) < radar_range and plane1.id != plane2.id: # When aircrafts are within radarrange(exluding self):
                 plane1.radar.append(plane2) # append plane to plane1.radar for check if avoidence is necessary
+                #bug fixing
+#                print 'plane 1: ', plane1.heading
+#                print 'plane 2: ', plane2.heading
+#                if plane1.atc[0] == plane2.atc[1] and plane1.atc[1] == plane2.atc[0]:
+#                    print graph.edges
+#                    print "opposing traffic!"
 
-# # excute commands and check for collision avoidence
-# def execute_commands(ATC_list,separation,v_max,t,dt):
-#     for atc in ATC_list:
-#         atc.execute_command(separation,v_max,t,dt)
+#check for each aircraft which other aircraft are within radar range
+def aircraft_list(atc,plane_list):
+    possible_handovers = len(atc.link)   #amount of links from which a aircraft can come
+    occupied_links = []
+    link_planes = []
+    for plane in atc.locp:          #TODO # iterate over all planes in the simulator
+        plane_list.append(plane)    # append plane to plane_list to create list of all planes for radar check
+        plane.radar = []            # empty radar list of each plane
+        #bug fixing
+        if plane.atc[0] not in occupied_links:
+            occupied_links.append(plane.atc[0])
+            link_planes.append(plane)
+    if len(occupied_links) == possible_handovers and possible_handovers > 1: #TODO temporary solution
+        print 'deadlock at atc: ', atc.id
+        print 'occupied_links: ', occupied_links
+        print 'possible_handovers', possible_handovers
+        for aircraft in link_planes:
+            atc.locp.remove(aircraft)
 
 #update each aircrafts position and track simulator variables (t_stop_total)            
 def update_aircraft(ATC_list,plane_speed,t_stop_total,dt,separation,v_max,t):

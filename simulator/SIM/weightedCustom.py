@@ -26,6 +26,6 @@ def dijkstra_path(G, source, target, weight='weight'):
     try:
         return 1, path[target]
     except KeyError:
-        return 0, []
+        return 0, []        
         # raise nx.NetworkXNoPath(
         #     "node %s not reachable from %s" % (source, target))
