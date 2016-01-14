@@ -15,8 +15,8 @@ from math import *
 piclist = []
 rectlist = []
 
-disp_link_density = False   # display density of each link
-disp_aircaft_id = False      # display aircraft id number
+disp_link_density = True   # display density of each link
+disp_aircaft_id = True      # display aircraft id number
 disp_waypoint_id = True    # display waypoint id number
 disp_links = True           # display the links between each waypoint
 disp_radar_aircraft = False  # display which other aircraft an aircaft sees
@@ -95,7 +95,7 @@ def map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X
             
             #diplay aircraft id
             if disp_aircaft_id:
-                id_string = str(plane.id)
+                id_string = str(plane.conflict)
                 font = pg.font.Font(None, 14)
                 text = font.render(id_string, 1, (10, 10, 10))
                 center_x_id = plane.x_pos + 75
