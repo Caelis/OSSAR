@@ -16,14 +16,14 @@ piclist = []
 rectlist = []
 
 disp_link_density = False   # display density of each link
-disp_aircaft_id = True      # display aircraft id number
+disp_aircaft_id = False      # display aircraft id number
 disp_waypoint_id = True    # display waypoint id number
 disp_links = True           # display the links between each waypoint
 disp_radar_aircraft = False  # display which other aircraft an aircaft sees
 
 def map_initialization(wp_database):
     pg.init()
-    reso = (1200,1200)
+    reso = (900,900)
     scr = pg.display.set_mode(reso)
     scrrect = scr.get_rect()
     scr.fill((2,255,70))

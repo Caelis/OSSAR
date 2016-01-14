@@ -120,7 +120,7 @@ class ATC:
             success, path = dijkstra_path(graph,self.id,plane.atc_goal)
             # if solution possible, command new heading/assign ATC
             if success:
-                plane.stop = False #path has been found, so aircraft doensn't have to stop
+                plane.stop = False
                 # path = shortestpath(graph,self.id,plane.atc_goal) #give the current fastest route using Dijkstra algorithm
                 next_atc = path[1] #selects the next atc
                 new_heading = atan2((int(wp_database[int(next_atc)][2])-(self.y_handoff)), (int(wp_database[int(next_atc)][1])-(self.x_handoff))) #calculate the heading after the operation
@@ -135,7 +135,7 @@ class ATC:
             # Otherwise tell the aircraft to stop immediately
             else:
 #                print 'no path found'
-                plane.stop = True # no path has been found, so aircraft has to stop
+                plane.stop = True
         if atc_type == 4:
             next_atc = self.id #selects the next atc
             new_heading = atan2((int(wp_database[int(next_atc)][2])-(self.y_handoff)), (int(wp_database[int(next_atc)][1])-(self.x_handoff))) #calculate the heading after the operation

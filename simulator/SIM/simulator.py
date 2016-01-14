@@ -41,7 +41,7 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
     #properties    
     r = int(1000.0 * np.sqrt(area/np.pi))   #creating the radius of the airspace
     v_max = 30*0.5144
-    separation = 200
+    separation = 100
     radar_range = 250
     mean = 3600/spawnrate #mean of aircraft spawning time
     std = 1 #standerd deviation of aircraft spawning time
