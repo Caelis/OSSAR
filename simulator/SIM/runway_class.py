@@ -38,12 +38,12 @@ class runway:
             self.occupance =  self.occupance - dt  # if True, count down
 #        print 'runway: ', self.id, ' occupance is: ', self.occupance
     
-    def take_off(self,plane,runway_occupance_time,ATC_list):
+    def take_off(self,plane,runway_occupance_time,ATC_list,graph):
         if self.waiting_list: #If there is a waiting list
             if not self.occupance:  # If the runway is not occupied
                 plane = self.waiting_list[0]
                 self.occupance = runway_occupance_time       # set occupancy time
-                ATC_list[plane.atc[1]].remove_plane(plane)  # remove plane from ATC
+                ATC_list[plane.atc[1]].remove_plane(plane, graph)  # remove plane from ATC
                 self.waiting_list.remove(plane)         # remove plane from waiting_list
             else:
                 plane.stop = True

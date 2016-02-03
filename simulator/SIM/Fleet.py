@@ -24,9 +24,9 @@ from data_import import rw_database
 from data_import import data
 
 #Uses a normal distribution to determine when the next aircaft will arrive
-def aircraft_interval(t_next_aircraft,idnumber,ATC_list,runway_list,r,v_max,create,mean,std,t,dt):
+def aircraft_interval(t_next_aircraft,idnumber,ATC_list,runway_list,r,v_max,create,mean,std,graph,t,dt):
     if create == True:
-        idnumber = create_aircraft(idnumber,ATC_list,runway_list,r,v_max,t,dt)
+        idnumber = create_aircraft(idnumber,ATC_list,runway_list,r,v_max,graph,t,dt)
         t_next_aircraft = t + np.random.normal(mean,std)
         create = False
     if create == False:
@@ -34,7 +34,7 @@ def aircraft_interval(t_next_aircraft,idnumber,ATC_list,runway_list,r,v_max,crea
             create = True
     return t_next_aircraft,create,idnumber
 
-def create_aircraft(idnumber,ATC_list,runway_list,r,v_max,t,dt): #creates aircraft when nessecary
+def create_aircraft(idnumber,ATC_list,runway_list,r,v_max,graph,t,dt): #creates aircraft when nessecary
     ATC_gate = int(rnd.choice(g_database))              # Random select a departure gate of the aircraft
     x1 = float(wp_database[ATC_gate][1])                # starting x-coordinate
     y1 = float(wp_database[ATC_gate][2])                # starting y-coordinate
@@ -56,7 +56,7 @@ def create_aircraft(idnumber,ATC_list,runway_list,r,v_max,t,dt): #creates aircra
     max_acc = int(data[int(plane_type)][4])             # set maximum accelaration
     max_dcc = int(data[int(plane_type)][3])             # set maximum deccelration
     new_plane = aircraft(idnumber,plane_type,speed,max_speed,max_acc,max_dcc,x1,y1,x1,y1,x2,y2,heading,ATC_gate,ATC_runway)
-    ATC_list[ATC_gate].add_plane(new_plane)
+    ATC_list[ATC_gate].add_plane(new_plane,graph)
     idnumber =  idnumber + 1
     return idnumber
 
@@ -68,8 +68,8 @@ def ATC_check(ATC_list,runway_list,graph,radar_range,runway_occupance_time,dt,t,
 #            print 'at time t: '
 #            for plane in atc.locp:
 #                print 'plane ', plane.id, 'has v ',plane.v, ' and deceleration: ', plane.deceleration
-        atc.update(ATC_list,runway_list,v_max,graph,runway_occupance_time,dt,t) # check if commands for the plane are necessary and plan operation
-        aircraft_list(atc,plane_list)    # check for each aircraft which other plane are within a certain(radar) range
+        graph = atc.update(ATC_list,runway_list,v_max,graph,runway_occupance_time,dt,t) # check if commands for the plane are necessary and plan operation
+        plane_list = aircraft_list(atc,plane_list)    # check for each aircraft which other plane are within a certain(radar) range
     for plane1 in plane_list:       # loop through all planes in the simulator
         for plane2 in plane_list:   # loop through all planes to compare to planes from above loop
             if hypot((plane2.x_pos-plane1.x_pos),(plane2.y_pos-plane1.y_pos)) < radar_range and plane1.id != plane2.id: # When aircrafts are within radarrange(exluding self):
@@ -80,6 +80,7 @@ def ATC_check(ATC_list,runway_list,graph,radar_range,runway_occupance_time,dt,t,
 #                if plane1.atc[0] == plane2.atc[1] and plane1.atc[1] == plane2.atc[0]:
 #                    print graph.edges
 #                    print "opposing traffic!"
+    return graph
 
 #check for each aircraft which other aircraft are within radar range
 def aircraft_list(atc,plane_list):
@@ -99,6 +100,7 @@ def aircraft_list(atc,plane_list):
         print 'possible_handovers', possible_handovers
         for aircraft in link_planes:
             atc.locp.remove(aircraft)
+    return plane_list
 
 #update each aircrafts position and track simulator variables (t_stop_total)            
 def update_aircraft(ATC_list,plane_speed,t_stop_total,dt,separation,v_max,t):
