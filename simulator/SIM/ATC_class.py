@@ -40,6 +40,11 @@ class ATC:
         self.throughput = False         # thoughput of ATC
         self.par = []
 
+    # def update_aircraft_distance(self):
+    #     for thisPlane in self.locp:
+    #         thisPlane.
+
+
     # check if commands for the plane are necessary and update planned operation
     def update(self,ATC_list,runway_list,v_max,graph,runway_occupance_time,dt,t):
         graph = self.command_check(ATC_list,runway_list,v_max,graph,runway_occupance_time,dt,t)

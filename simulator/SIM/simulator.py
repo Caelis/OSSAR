@@ -54,6 +54,12 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
     # create ATC for each waypoint
     ATC_list = create_ATC(wp_database,ATC_list)
 
+    # create an empty list of aircraft
+    aircraft_list = []
+    # create an empty list of aircraft that have been removed
+    aircraft_list_removed = []
+
+
     #create all runways
     idnumber_rw, runway_list = create_runway(idnumber_rw,ATC_list,runway_list)    
     
@@ -64,18 +70,41 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
     taxiwayGraph = nx.DiGraph(taxiwayGraph0)
     while running == True:
         # taxiwayGraph = nx.DiGraph(taxiwayGraph0)
+
         #update Dijkstra structure based on current traffic situation
         taxiwayGraph = update_dijsktra(ATC_list,taxiwayGraph,separation,v_max)
+
         #update runways
         update_runway(runway_list,runway_occupance_time,ATC_list,dt)
-        #create new aircraft if nessecary
-        t_next_aircraft, create, idnumber = aircraft_interval(t_next_aircraft,idnumber,ATC_list,runway_list,r,v_max,create,mean,std,taxiwayGraph,t,dt)
-        #create and execute commands
+
+        # add aircraft
+        t_next_aircraft, create, idnumber = aircraft_interval(t_next_aircraft,idnumber,ATC_list,aircraft_list,runway_list,r,v_max,create,mean,std,taxiwayGraph,t,dt)
+
+        # update plane positions
+        update_all_aircraft_position(aircraft_list,dt)
+
+        # update ATC (decision making here)
         taxiwayGraph = ATC_check(ATC_list,runway_list,taxiwayGraph,radar_range,runway_occupance_time,dt,t,v_max)
+
+        ## radar (distance of aircraft from ATC)
+        ## handoff decision
+        ## graph update
+        ## heading and speed commands
+
+
+        # update aircraft (decision making)
+        ## update radar of all ac
+        ## each aircraft
+        ### conflict detection
+        ### speed decision
+        ### heading decision
+
+        #create new aircraft if nessecary
+        #create and execute commands
         # excecute all commands
         # execute_commands(ATC_list,separation,v_max,t,dt)
         #update the aicraft position
-        t_stop_total,plane_speed = update_aircraft(ATC_list,plane_speed,t_stop_total,dt,separation,v_max,t)
+        t_stop_total,plane_speed = update_aircraft(aircraft_list,plane_speed,t_stop_total,dt,separation,v_max,radar_range,t)
         #if True, run map
         if Map == True:
             running = map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X_waypoint,Y_waypoint,wp_database,wpl_database, taxiwayGraph)

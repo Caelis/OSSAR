@@ -49,6 +49,7 @@ class aircraft:
         self.deceleration = 0
         self.conflict = ''
         self.stop = False           #Becomes True if the aircraft has no goal -> aircraft stops
+        self.isActive = True        # To check if an aircraft is active or not.
 
     def update(self,separation,v_max,t,dt):
         this_t_stop = 0
@@ -56,8 +57,8 @@ class aircraft:
             self.decision_making(separation,v_max,dt)
         else:                   # if the plane does not have a goal atc, it should stop
             self.deceleration = self.max_deceleration
-        self.update_speed(dt)   # update plane speed
-        self.update_pos(dt)     # update the position of each aircraf decide to accelerate or deceleratet
+        #self.update_speed(dt)   # update plane speed
+        #self.update_pos(dt)     # update the position of each aircraf decide to accelerate or deceleratet
         if self.v < 0.05:        # each time step calculate the total stopping time
             this_t_stop = dt
         return self.v, this_t_stop
