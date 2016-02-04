@@ -47,8 +47,18 @@ class ATC:
 
     # check if commands for the plane are necessary and update planned operation
     def update(self,ATC_list,runway_list,v_max,graph,runway_occupance_time,dt,t):
+        self.update_radar
+
         graph = self.command_check(ATC_list,runway_list,v_max,graph,runway_occupance_time,dt,t)
         return graph
+
+    def update_radar(self):
+        for aircraft in self.locp:
+            aircraft.distance_to_atc = hypot((self.x_handoff-aircraft.x_pos),(self.y_handoff-aircraft.y_pos))
+            # calc the cross product 3rd row
+
+
+
     
     #check if a plane needs a command
     def command_check(self,ATC_list,runway_list,v_max,graph,runway_occupance_time,dt,t):

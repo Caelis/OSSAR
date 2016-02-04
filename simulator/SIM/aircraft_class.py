@@ -49,6 +49,7 @@ class aircraft:
         self.deceleration = 0
         self.conflict = ''
         self.stop = False           #Becomes True if the aircraft has no goal -> aircraft stops
+        self.distance_to_atc = 0    #Distance to the current assigned ATC
         self.isActive = True        # To check if an aircraft is active or not.
 
     def update(self,separation,v_max,t,dt):

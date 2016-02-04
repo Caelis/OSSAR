@@ -86,7 +86,7 @@ def aircraft_radar_list(atc):
 
 #update each aircrafts position and track simulator variables (t_stop_total)
 def update_aircraft(aircraft_list,plane_speed,t_stop_total,dt,separation,v_max,radar_range,t):
-    update_all_aircraft(aircraft_list,radar_range)
+    update_all_aircraft_radar(aircraft_list,radar_range)
     for plane in aircraft_list:      #loop through all aircraft
         this_speed, this_stop_time = plane.update(separation,v_max,t,dt)
         plane_speed.append(this_speed)
@@ -98,7 +98,7 @@ def update_all_aircraft_position(aircraft_list,dt):
         thisAircraft.update_pos(dt)
         thisAircraft.update_speed(dt)
 
-def update_all_aircraft(plane_list,radar_range):
+def update_all_aircraft_radar(plane_list,radar_range):
     for plane1 in plane_list:       # loop through all planes in the simulator
         for plane2 in plane_list:   # loop through all planes to compare to planes from above loop
             if hypot((plane2.x_pos-plane1.x_pos),(plane2.y_pos-plane1.y_pos)) < radar_range and plane1.id != plane2.id: # When aircrafts are within radarrange(exluding self):
