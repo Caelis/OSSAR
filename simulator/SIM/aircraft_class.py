@@ -312,6 +312,8 @@ class aircraft:
     # update hading
     def update_heading(self):
         self.heading = atan2((self.y_des-self.y_pos), (self.x_des-self.x_pos))
+        if self.heading <0:
+            self.heading = 2*pi + self.heading
 
     # update current atc    
     def update_atc(self,new_atc):

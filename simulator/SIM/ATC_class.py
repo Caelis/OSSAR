@@ -15,6 +15,7 @@ from math import *
 import random as rnd
 import networkx as nx
 from weightedCustom import dijkstra_path
+import time
 
 #import OSSAR modules
 # from dijkstra_structure import shortestpath
@@ -47,19 +48,33 @@ class ATC:
 
     # check if commands for the plane are necessary and update planned operation
     def update(self,ATC_list,runway_list,v_max,graph,runway_occupance_time,dt,t):
-        self.update_radar
-
+        self.update_radar()
         graph = self.command_check(ATC_list,runway_list,v_max,graph,runway_occupance_time,dt,t)
         return graph
 
     def update_radar(self):
         for aircraft in self.locp:
             aircraft.distance_to_atc = hypot((self.x_handoff-aircraft.x_pos),(self.y_handoff-aircraft.y_pos))
-            # calc the cross product 3rd row
+            # print('The distance is ' + str(aircraft.distance_to_atc) + ' initially')
+            # rotate the coordiantes
+            xAcRot,yAcRot = self.rotateXY(aircraft.heading,aircraft.x_pos,aircraft.y_pos)
+            xAtcRot,yAtcRot = self.rotateXY(aircraft.heading,self.x_handoff,self.y_handoff)
+            # print('Aircraft heading: ' + str(aircraft.heading + pi/2))
+            # print('Aircraft x: ' + str(aircraft.x_pos) + ' becomes ' + str(xAcRot))
+            # print('Aircraft y: ' + str(aircraft.y_pos) + ' becomes ' + str(yAcRot))
+            # print('ATC x: ' + str(self.x_handoff) + ' becomes ' + str(xAtcRot))
+            # print('ATC y: ' + str(self.y_handoff) + ' becomes ' + str(yAcRot))
+            if yAcRot > yAtcRot:
+                aircraft.distance_to_atc = -aircraft.distance_to_atc
+                print('The distance is ' + str(aircraft.distance_to_atc) + '. We passed the ATC')
+                # time.sleep(1.0)
 
+    def rotateXY(self,angle,x,y): # Rotation matrix
+        angle = -angle + pi/2
+        xRot = cos(angle)*x - sin(angle)*y
+        yRot = sin(angle)*x + cos(angle)*y
+        return xRot,yRot
 
-
-    
     #check if a plane needs a command
     def command_check(self,ATC_list,runway_list,v_max,graph,runway_occupance_time,dt,t):
         for plane in self.locp:
@@ -103,9 +118,11 @@ class ATC:
                 pass
             elif plane.op[0].par.has_key('next_atc') and (plane.op[0].par['next_atc'] == plane.atc[0]):
                 print 'Plane', plane.id, ', at ATC ', self.id, ' made a 180 degree turn!'
-                graph = self.plane_handoff(ATC_list,plane,graph,t)
+                if plane.distance_to_atc  < 0:
+                    graph = self.plane_handoff(ATC_list,plane,graph,t)
             elif plane.op[0].par.has_key('next_atc') and (plane.op[0].par['next_atc'] != self.id):
-                graph = self.plane_handoff(ATC_list,plane,graph,t)
+                if plane.distance_to_atc  < 0:
+                    graph = self.plane_handoff(ATC_list,plane,graph,t)
             else:
                 self.plan_operation(self.id,ATC_list,runway_list,plane,graph,v_max,dt,t)
                 print 'Plane ' + str(plane.id) + ', at ATC ' + str(self.id) + 'needs a new ATC!'
@@ -142,7 +159,7 @@ class ATC:
                 # path = shortestpath(graph,self.id,plane.atc_goal) #give the current fastest route using Dijkstra algorithm
                 next_atc = path[1] #selects the next atc
                 new_heading = atan2((int(wp_database[int(next_atc)][2])-(self.y_handoff)), (int(wp_database[int(next_atc)][1])-(self.x_handoff))) #calculate the heading after the operation
-                plane.heading = atan2((self.y_handoff-plane.y_pos), (self.x_handoff-plane.x_pos))
+                #TODO this seems unnecesary!!! # plane.heading = atan2((self.y_handoff-plane.y_pos), (self.x_handoff-plane.x_pos))
                 turn_angle = new_heading - plane.heading # calculate the turn angle
                 distance = hypot(plane.x_pos-self.x_handoff, plane.y_pos-self.y_handoff) #calculate at which distance the operation should be finished
                 par['next_atc'] = next_atc
