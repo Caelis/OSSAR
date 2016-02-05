@@ -72,14 +72,50 @@ class ATC:
         xAtcRot,yAtcRot = self.rotateXY(aircraft.heading,self.x_handoff,self.y_handoff)
         if yAcRot > yAtcRot:
             aircraft.distance_to_atc = -aircraft.distance_to_atc
-            print('The distance is ' + str(aircraft.distance_to_atc) + '. We passed the ATC')
+            # print('The distance is ' + str(aircraft.distance_to_atc) + '. We passed the ATC')
+
+##############################
+## pre Hand-off
+##############################
+    # def pre_handoff_decisions(self,graph):
+    #     for aircraft in self.locp:
+    #         if not aircraft.check_if_ac_can_stop(aircraft.distance_to_atc,'comfort'):
+    #             self.pre_handoff_decision(aircraft,graph)
+
+    def pre_handoff_type_select(self,aircraft,graph):
+        if self.type == 4:
+            pass
+        elif self.type == 1:
+            pass
+        elif self.type == 2:
+            self.pre_handoff_intersection(aircraft,graph)
+        else:
+            'THIS IS NOT SUPPOSED TO HAPPEN! EACH NODE MUST HAVE A TYPE!!!'
+
+    def pre_handoff_intersection(self,plane,graph):
+        target_atc = plane.atc[1] # Where the plane is currently going to
+        next_atc = plane.op[0].par['next_atc'] # where the plane is going to next
+        if graph.has_edge(target_atc,next_atc):
+            print 'Pre Handoff successfull Plane ' + str(plane.id) + ' ATC: ' + str(self.id)
+            plane.ready_for_hand_off = True
+            self.increase_graph_density(graph,target_atc,next_atc)
+        else:
+            print 'Emergency stop Plane ' + str(plane.id) + ' ATC: ' + str(self.id)
+            time.sleep(10)
+            plane.stop = True
 
 ##############################
 ## Hand-off
 ##############################
     def handoff_decisions(self,ATC_list,graph,runway_list,runway_occupance_time):
         for aircraft in self.locp:
-            if aircraft.distance_to_atc <= 0 and not aircraft.handed_off:
+            # Pre-handoff decision
+            if not aircraft.check_if_ac_can_stop(aircraft.distance_to_atc,'comfort') and not aircraft.ready_for_hand_off:
+                aircraft.ready_for_hand_off = True
+                self.pre_handoff_type_select(aircraft,graph)
+            # Handoff decision
+            if aircraft.distance_to_atc <= 0 and not aircraft.handed_off and aircraft.ready_for_hand_off:
+                aircraft.ready_for_hand_off = False
                 aircraft.handed_off = True
                 print 'Handoff aircraft ' + str(aircraft.id)
                 self.plane_handoff(aircraft,ATC_list,graph,runway_list,runway_occupance_time)
@@ -108,7 +144,7 @@ class ATC:
         next_atc = plane.op[0].par['next_atc'] # where the plane is going to next
         try:
             ## update graph density
-            self.increase_graph_density(graph,target_atc,next_atc)
+            # self.increase_graph_density(graph,target_atc,next_atc)
             self.decrease_graph_density(graph,source_atc,target_atc)
             ## process the aircraft handoff
             plane.process_handoff(next_atc,float(wp_database[self.id][1]), float(wp_database[self.id][2]), float(wp_database[next_atc][1]), float(wp_database[next_atc][2]))
@@ -116,7 +152,7 @@ class ATC:
             ATC_list[next_atc].add_plane(plane) # add to next ATC
             self.remove_plane(plane)
         except:
-            plane.stop
+            plane.stop = True
 
     def plane_handoff_gate(self,plane,ATC_list,graph):
         success, path = self.get_path(graph,self.id,plane.atc_goal)
@@ -166,6 +202,10 @@ class ATC:
             new_heading = 0
         return new_heading-old_heading
 
+
+##############################
+## Graph handling functions
+##############################
     def increase_graph_density(self,graph,source,target):
         graph[source][target]['density'] += 1
         print 'Density now is ' + str(graph[source][target]['density'])

@@ -69,7 +69,7 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
     #simulator loop
     taxiwayGraph = nx.DiGraph(taxiwayGraph0)
     while running == True:
-        print 'Time is: ' + str(t)
+        # print 'Time is: ' + str(t)
         # time.sleep(5)
         # taxiwayGraph = nx.DiGraph(taxiwayGraph0)
 

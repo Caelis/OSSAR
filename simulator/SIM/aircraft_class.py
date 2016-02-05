@@ -53,6 +53,8 @@ class aircraft:
         self.distance_to_atc = 0    #Distance to the current assigned ATC
         self.isActive = True        # To check if an aircraft is active or not.
         self.handed_off = False     # TO check if aircraft was handed off
+        self.ready_for_hand_off = False     # TO check if aircraft is_ready_for_hand_off
+
 
     def update(self,separation,v_max,t,dt):
         this_t_stop = 0
@@ -65,6 +67,22 @@ class aircraft:
         if self.v < 0.05:        # each time step calculate the total stopping time
             this_t_stop = dt
         return self.v, this_t_stop
+
+    def check_if_ac_can_stop(self,distance,type):
+        if distance >= self.stopping_distance(type):
+            return True
+        else:
+            return False
+
+    def stopping_distance(self,type):
+        if type == 'comfort':
+            deceleration = self.comfort_deceleration
+        elif type == 'emergncy':
+            deceleration = self.max_deceleration
+        distance = ((self.v)*(self.v))/(2*deceleration)
+        return distance
+
+
 
     def process_handoff(self,next_atc,x_beg,y_beg,x_des,y_des):
         self.op = []
@@ -322,6 +340,8 @@ class aircraft:
 
     # update speed
     def update_speed(self,dt):
+        if self.stop:
+            self.deceleration = self.max_deceleration
         new_speed = self.v - (dt*self.deceleration)
         if new_speed > 0:
             self.v = new_speed
