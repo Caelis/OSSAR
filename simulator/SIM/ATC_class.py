@@ -63,6 +63,7 @@ class ATC:
 ##############################
     def update_radar(self):
         for aircraft in self.locp:
+            aircraft.handed_off = False
             self.calculate_aircraft_atc_distance(aircraft)
 
     def calculate_aircraft_atc_distance(self,aircraft):
@@ -78,12 +79,12 @@ class ATC:
 ##############################
     def handoff_decisions(self,ATC_list,graph,runway_list,runway_occupance_time):
         for aircraft in self.locp:
-            if aircraft.distance_to_atc <= 0:
+            if aircraft.distance_to_atc <= 0 and not aircraft.handed_off:
+                aircraft.handed_off = True
                 print 'Handoff aircraft ' + str(aircraft.id)
-                self.plane_handoff_new(aircraft,ATC_list,graph,runway_list,runway_occupance_time)
-                # self.plane_handoff(ATC_list,aircraft,graph)
+                self.plane_handoff(aircraft,ATC_list,graph,runway_list,runway_occupance_time)
 
-    def plane_handoff_new(self,plane,ATC_list,graph,runway_list,runway_occupance_time):
+    def plane_handoff(self,plane,ATC_list,graph,runway_list,runway_occupance_time):
         if self.type == 4:
             self.plane_handoff_runway(plane,ATC_list,graph,runway_list,runway_occupance_time)
         elif self.type == 1:
@@ -105,17 +106,17 @@ class ATC:
         source_atc = plane.atc[0] # Where the plane is coming from
         target_atc = plane.atc[1] # Where the plane is currently going to
         next_atc = plane.op[0].par['next_atc'] # where the plane is going to next
-
-        ## update graph density
-        self.increase_graph_density(graph,target_atc,next_atc)
-        self.decrease_graph_density(graph,source_atc,target_atc)
-
-        ## process the aircraft handoff
-        plane.process_handoff(next_atc,float(wp_database[self.id][1]), float(wp_database[self.id][2]), float(wp_database[next_atc][1]), float(wp_database[next_atc][2]))
-
-        ## update plane -> atc assignment
-        ATC_list[next_atc].add_plane(plane) # add to next ATC
-        self.remove_plane(plane)
+        try:
+            ## update graph density
+            self.increase_graph_density(graph,target_atc,next_atc)
+            self.decrease_graph_density(graph,source_atc,target_atc)
+            ## process the aircraft handoff
+            plane.process_handoff(next_atc,float(wp_database[self.id][1]), float(wp_database[self.id][2]), float(wp_database[next_atc][1]), float(wp_database[next_atc][2]))
+            ## update plane -> atc assignment
+            ATC_list[next_atc].add_plane(plane) # add to next ATC
+            self.remove_plane(plane)
+        except:
+            plane.stop
 
     def plane_handoff_gate(self,plane,ATC_list,graph):
         success, path = self.get_path(graph,self.id,plane.atc_goal)
@@ -127,7 +128,7 @@ class ATC:
             self.increase_graph_density(graph,self.id,next_atc)
 
             ## update plane -> atc assignment
-            ATC_list[next_atc].calculate_aircraft_atc_distance(plane)
+            # ATC_list[next_atc].calculate_aircraft_atc_distance(plane)
             ATC_list[next_atc].add_plane(plane) # add to next ATC
             self.remove_plane(plane)
             plane.process_handoff(next_atc,float(wp_database[target_atc][1]),float(wp_database[target_atc][2]),float(wp_database[next_atc][1]),float(wp_database[next_atc][2]))
@@ -193,29 +194,6 @@ class ATC:
         for plane in self.locp:
             # plan operation
             self.plan_operation(plane,graph,t)
-            # is aircraft at handoff point
-            # if sqrt((plane.x_pos - self.x_handoff)**2 + (plane.y_pos - self.y_handoff)**2) <= v_max*dt:
-            #     self.create_commands(plane,ATC_list,runway_list,v_max,graph,runway_occupance_time,dt,t)
-        
-    #create commands for each plane if necessary
-#     def create_commands(self,plane,ATC_list,runway_list,v_max,graph,runway_occupance_time,dt,t):
-# #            self.plane_handoff(ATC_list,plane,t)
-#         if plane.stop:
-# #                print 'plane.stop executed'
-#             pass
-#         elif plane.op[0].par.has_key('next_atc') and (plane.op[0].par['next_atc'] == plane.atc[0]):
-#             print 'Plane', plane.id, ', at ATC ', self.id, ' made a 180 degree turn!'
-#             if plane.distance_to_atc  < 0:
-#                 0
-#                 # graph = self.plane_handoff(ATC_list,plane,graph)
-#         elif plane.op[0].par.has_key('next_atc') and (plane.op[0].par['next_atc'] != self.id):
-#             if plane.distance_to_atc  < 0:
-#                 0
-#                 # graph = self.plane_handoff(ATC_list,plane,graph)
-#         else:
-#             self.plan_operation(self.type,ATC_list,runway_list,plane,graph,v_max,dt,t)
-#             print 'Plane ' + str(plane.id) + ', at ATC ' + str(self.id) + 'needs a new ATC!'
-#         return graph
 
     def plan_operation(self,plane,graph,t):
         par = {}
@@ -253,44 +231,6 @@ class ATC:
             par['distance'] = distance
             plane_command = command(command_type, self.id, plane.id, t, 1, par) #1 = send
             plane.op.append(plane_command)
-        
-    def plane_handoff(self,ATC_list,plane,graph):
-        source_atc = plane.atc[0]
-        target_atc = plane.atc[1]
-        next_atc = plane.op[0].par['next_atc']
-
-        # code to add a plane
-        print 'Plane ' + str(plane.id) + ' added to link ' + str(target_atc) + '->' + str(next_atc)
-        # update the density on the graph
-
-        try:
-            graph[target_atc][next_atc]['density'] += 1
-            print 'Density now is ' + str(graph[target_atc][next_atc]['density'])
-            if graph[target_atc][next_atc]['density'] > 0:
-                print 'edge removed'
-                graph.remove_edges_from([(next_atc,target_atc)])
-                # graph[next_atc][target_atc]['density']= 100000000
-            graph = ATC_list[next_atc].add_plane(plane,graph) # add to next ATC
-
-            # code to remove the plane
-            if source_atc and target_atc:
-                print 'Plane ' + str(plane.id) + ' removed from link ' + str(source_atc) + '->' + str(target_atc)
-                # update the density on the graph
-                graph[source_atc][target_atc]['density'] -= 1
-                # if the no more planes on this link, add link in the other direction
-                if graph[source_atc][target_atc]['density'] == 0:
-                    # graph[target_atc][source_atc]['density']=0
-                    print 'edge added from ' + str(target_atc) + ' to ' + str(source_atc)
-                    distance = hypot((wp_database[target_atc][1]-wp_database[source_atc][1]),(wp_database[target_atc][2]-wp_database[source_atc][2]))
-                    value =  distance / 30*0.5144 #TODO replace 30 with v_max
-                    graph.add_weighted_edges_from([(target_atc,source_atc,value)])
-                    graph[target_atc][source_atc]['distance']=distance
-                    graph[target_atc][source_atc]['density']=0
-            graph = self.remove_plane(plane,graph) # remove from current ATC
-        except:
-            plane.stop = True
-        plane.process_handoff(next_atc,float(wp_database[self.id][1]), float(wp_database[self.id][2]), float(wp_database[next_atc][1]), float(wp_database[next_atc][2]))
-        return graph
 
     def remove_plane(self,plane):
         self.locp.remove(plane)

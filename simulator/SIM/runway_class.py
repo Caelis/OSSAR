@@ -43,7 +43,7 @@ class runway:
             if not self.occupance:  # If the runway is not occupied
                 plane = self.waiting_list[0]
                 self.occupance = runway_occupance_time       # set occupancy time
-                ATC_list[plane.atc[1]].remove_plane(plane, graph)  # remove plane from ATC
+                ATC_list[plane.atc[1]].remove_plane(plane)  # remove plane from ATC
                 self.waiting_list.remove(plane)         # remove plane from waiting_list
             else:
                 plane.stop = True
