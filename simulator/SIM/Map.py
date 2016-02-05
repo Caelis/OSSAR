@@ -95,7 +95,9 @@ def map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X
             
             #diplay aircraft id
             if disp_aircaft_id:
-                id_string = str(plane.conflict)
+                # id_string = str(plane.conflict)
+                # id_string = str(round(plane.distance_to_atc,1))
+                id_string = 'Going from ' + str(plane.atc[0]) + ' to ' + str(plane.atc[1]) + ' dist: ' + str(round(plane.distance_to_atc,1))
                 font = pg.font.Font(None, 14)
                 text = font.render(id_string, 1, (10, 10, 10))
                 center_x_id = plane.x_pos + 75
@@ -133,7 +135,7 @@ def map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X
         pg.draw.circle(scr, (255,0,0), (wp_map_x, wp_map_y), 3)
         if disp_waypoint_id:
             font = pg.font.Font(None, 14)
-            text = font.render(str(i), 1, (10, 10, 10))
+            text = font.render(str(i) + '/' + str(len(ATC_list[i].locp)), 1, (10, 10, 10))
             textpos = text.get_rect()
             textpos.centerx = wp_map_x+10
             textpos.centery = wp_map_y+10
