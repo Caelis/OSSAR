@@ -15,6 +15,7 @@ from flightplan_class import *
 from ATC_class import ATC
 import random as rnd
 import numpy as np
+import time
 
 #import data
 from data_import import wp_database
@@ -35,35 +36,63 @@ def aircraft_interval(t_next_aircraft,idnumber,ATC_list,aircraft_list,runway_lis
     return t_next_aircraft,create,idnumber
 
 def create_aircraft(idnumber,ATC_list,aircraft_list,runway_list,r,v_max,graph,t,dt): #creates aircraft when nessecary
+    # select origin and destination
     ATC_gate = int(rnd.choice(g_database))              # Random select a departure gate of the aircraft
+    ATC_runway = int(rnd.choice(rw_database))           # Random select a runway entrance of the aircraft
+
+    # initilaize coordinates
     x1 = float(wp_database[ATC_gate][1])                # starting x-coordinate
     y1 = float(wp_database[ATC_gate][2])                # starting y-coordinate
-#    runwayid = rnd.choice(runway_list).id               # Random select a runway entrance of the aircraft
-#    goal = []
-#    print runwayid
-#    for node in runway_list[runwayid].nodes:
-#        x_coor = wp_database[node][1]
-#        y_coor = wp_database[node][2]
-#        goal.append([x_coor,y_coor])
-    ATC_runway = int(rnd.choice(rw_database))           # Random select a runway entrance of the aircraft
-#    ATC_runway = rnd.choice(runway_list).id           # Random select a runway for the aircraft
     x2 = float(wp_database[ATC_gate][1])                # goal x-coordinate
     y2 = float(wp_database[ATC_gate][2])                # goal y-coordinate
-    speed = 30*0.5144                                   # choose starting speed
-    max_speed = v_max                                   # starting value for the maximum speed
-    heading = False                                     # Set an initial value for the heading
+
+    # Initialize plane tyep
     plane_type = int(rnd.choice(data)[0])               # choose a type of aircraft
     max_acc = int(data[int(plane_type)][4])             # set maximum accelaration
     max_dcc = int(data[int(plane_type)][3])             # set maximum deccelration
+
+    # initialize speed and heading
+    speed = 30*0.5144                                   # choose starting speed
+    max_speed = v_max                                   # starting value for the maximum speed
+    heading = 1.5                                     # Set an initial value for the heading
+
+    # create a new plane && add to aircraft list
     new_plane = aircraft(idnumber,plane_type,speed,max_speed,max_acc,max_dcc,x1,y1,x1,y1,x2,y2,heading,ATC_gate,ATC_runway)
-    ATC_list[ATC_gate].add_plane(new_plane,graph)
     aircraft_list.append(new_plane)
+
+    # add plane to the responsible ATC
+    ATC_list[ATC_gate].add_plane(new_plane)
+
+    # have the first gate plan the operation
+    # success, path = ATC_list[ATC_gate].get_path(graph,ATC_gate,ATC_runway)
+    # if success:
+    #     next_atc = path[1]
+    #     # ATC_list[next_atc].add_plane(new_plane)
+    #     new_plane.process_handoff(next_atc,float(wp_database[ATC_gate][1]),float(wp_database[ATC_gate][2]),float(wp_database[next_atc][1]),float(wp_database[next_atc][2]))
+    #     new_plane.update_heading()
+    #
+    #     # ## OR
+    #     # next_atc = path[1]
+    #     # par = {}
+    #     # par['next_atc'] = next_atc
+    #     # plane_command = command('heading', ATC_gate, new_plane.id, t, 1, par) #1 = send
+    #     # new_plane.op.append(plane_command)
+    #     # # new_plane.atc = [ATC_gate, next_atc]
+    #     # new_plane.op[0].par['next_atc'] = next_atc
+    #     # # ATC_list[next_atc].add_plane(new_plane)
+    #     # # new_plane.process_handoff(next_atc,float(wp_database[ATC_gate][1]),float(wp_database[ATC_gate][2]),float(wp_database[next_atc][1]),float(wp_database[next_atc][2]))
+    #     # new_plane.update_heading()
     idnumber =  idnumber + 1
     return idnumber
 
 #loops through all ATC and appends a
-def ATC_check(ATC_list,runway_list,graph,radar_range,runway_occupance_time,dt,t,v_max):
+def update_all_ATC(ATC_list,runway_list,graph,radar_range,runway_occupance_time,dt,t,v_max):
+    ## each atc
     for atc in ATC_list:
+        ### radar (distance of aircraft from ATC)
+        ### handoff decision
+        ### graph update
+        ### heading and speed commands
         graph = atc.update(ATC_list,runway_list,v_max,graph,runway_occupance_time,dt,t) # check if commands for the plane are necessary and plan operation
         aircraft_radar_list(atc)    # check for each aircraft which other plane are within a certain(radar) range
     return graph

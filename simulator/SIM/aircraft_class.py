@@ -16,6 +16,7 @@ import random
 from math import *
 from data_import import data
 from data_import import wp_database
+import time
 
 # Aircraft class is created
 class aircraft:
@@ -48,7 +49,7 @@ class aircraft:
         self.comfort_acceleration = 0.8
         self.deceleration = 0
         self.conflict = ''
-        self.stop = False           #Becomes True if the aircraft has no goal -> aircraft stops
+        self.stop = True           #Becomes True if the aircraft has no goal -> aircraft stops
         self.distance_to_atc = 0    #Distance to the current assigned ATC
         self.isActive = True        # To check if an aircraft is active or not.
 
@@ -63,6 +64,20 @@ class aircraft:
         if self.v < 0.05:        # each time step calculate the total stopping time
             this_t_stop = dt
         return self.v, this_t_stop
+
+    def process_handoff(self,next_atc,x_beg,y_beg,x_des,y_des):
+        self.op = []
+        self.par_avoid = {}
+        self.par_command = {}
+        self.update_atc(next_atc)
+        self.v_target = False
+        self.s_target = False
+        self.heading = False
+        self.heading_target = False
+        self.x_beg = x_beg #float(wp_database[self.id][1])
+        self.y_beg = y_beg #float(wp_database[self.id][2])
+        self.x_des = x_des #float(wp_database[next_atc][1])
+        self.y_des = y_des #float(wp_database[next_atc][2])
 
     # decision making process to determine heading and speed
     def decision_making(self,separation,v_max,dt):
@@ -311,9 +326,11 @@ class aircraft:
                 
     # update hading
     def update_heading(self):
+        print('Going from [' + str(self.x_pos) + ',' + str(self.y_pos) + '] to [' + str(self.x_des) + ',' + str(self.y_des) + ']')
         self.heading = atan2((self.y_des-self.y_pos), (self.x_des-self.x_pos))
         if self.heading <0:
             self.heading = 2*pi + self.heading
+        print('Heading: ' + str(self.heading))
 
     # update current atc    
     def update_atc(self,new_atc):

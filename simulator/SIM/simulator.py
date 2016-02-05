@@ -77,15 +77,11 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
         #update runways
         update_runway(runway_list,runway_occupance_time,ATC_list,dt)
 
-        # add aircraft
-        t_next_aircraft, create, idnumber = aircraft_interval(t_next_aircraft,idnumber,ATC_list,aircraft_list,runway_list,r,v_max,create,mean,std,taxiwayGraph,t,dt)
-
         # update plane positions
         update_all_aircraft_position(aircraft_list,dt)
 
         # update ATC (decision making here)
-        taxiwayGraph = ATC_check(ATC_list,runway_list,taxiwayGraph,radar_range,runway_occupance_time,dt,t,v_max)
-
+        taxiwayGraph = update_all_ATC(ATC_list,runway_list,taxiwayGraph,radar_range,runway_occupance_time,dt,t,v_max)
         ## radar (distance of aircraft from ATC)
         ## handoff decision
         ## graph update
@@ -105,6 +101,10 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
         # execute_commands(ATC_list,separation,v_max,t,dt)
         #update the aicraft position
         t_stop_total,plane_speed = update_aircraft(aircraft_list,plane_speed,t_stop_total,dt,separation,v_max,radar_range,t)
+
+        # add aircraft
+        t_next_aircraft, create, idnumber = aircraft_interval(t_next_aircraft,idnumber,ATC_list,aircraft_list,runway_list,r,v_max,create,mean,std,taxiwayGraph,t,dt)
+
         #if True, run map
         if Map == True:
             running = map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X_waypoint,Y_waypoint,wp_database,wpl_database, taxiwayGraph)
