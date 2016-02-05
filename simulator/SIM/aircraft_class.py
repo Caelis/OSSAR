@@ -52,6 +52,7 @@ class aircraft:
         self.stop = True           #Becomes True if the aircraft has no goal -> aircraft stops
         self.distance_to_atc = 0    #Distance to the current assigned ATC
         self.isActive = True        # To check if an aircraft is active or not.
+        self.handed_off = False     # TO check if aircraft was handed off
 
     def update(self,separation,v_max,t,dt):
         this_t_stop = 0
@@ -72,55 +73,58 @@ class aircraft:
         self.update_atc(next_atc)
         self.v_target = False
         self.s_target = False
-        self.heading = False
         self.heading_target = False
         self.x_beg = x_beg #float(wp_database[self.id][1])
         self.y_beg = y_beg #float(wp_database[self.id][2])
         self.x_des = x_des #float(wp_database[next_atc][1])
         self.y_des = y_des #float(wp_database[next_atc][2])
+        self.heading = self.calculate_heading(self.x_des,self.y_des)
 
     # decision making process to determine heading and speed
     def decision_making(self,separation,v_max,dt):
         self.target_speeds = []
-        self.deceleration = 0        # always accelerate!
-#        conflict = True
-        #  check for collision
-        conflict = self.conflict_avoidance(separation)         # perform a collision avoidanace check for all planes within aircraft range
-        command = self.check_newcommands(v_max,dt)    # check if new commands were given
-        # Here we have 2 boolean variables conflict and command, as well as a dictionary
-
-        needed_deceleration = -1     # assume no deceleration needed
-        for speed_command in self.target_speeds:
-            if speed_command['s_target'] == 0: #if there is target distance = 0
-                if speed_command['v_target']-self.v == 0:
-                    commanded_deceleration = 0
-                    print 'check'
-                elif speed_command['v_target']-self.v > 0:
-                    commanded_deceleration = -self.comfort_acceleration #TODO acceleration is not needed when waiting in line
-                else:
-                    commanded_deceleration = self.max_deceleration
-            else:
-                if self.v > 0:
-                    commanded_deceleration = (self.v-speed_command['v_target'])/(speed_command['s_target']/self.v) # deceleration based on command
-                else:
-                    commanded_deceleration = -(speed_command['v_target']/speed_command['s_target'])
-            if commanded_deceleration > needed_deceleration:
-                needed_deceleration = commanded_deceleration
-        # print str(self.id) + ': ' + str(self.target_speeds) + ', which is a needed deceleration of: ' + str(needed_deceleration)
-        if needed_deceleration == -1:
-            self.deceleration = -self.comfort_acceleration
+        if self.stop:
+            self.deceleration = self.max_deceleration
         else:
-            if needed_deceleration >= self.comfort_deceleration:
-                if needed_deceleration < self.max_deceleration:
-                    # print str(self.id) + ' must decelerate! Current speed = ' + str(self.v)
-                    self.deceleration = needed_deceleration
+            self.deceleration = 0        # always accelerate!
+    #        conflict = True
+            #  check for collision
+            conflict = self.conflict_avoidance(separation)         # perform a collision avoidanace check for all planes within aircraft range
+            command = self.check_newcommands(v_max,dt)    # check if new commands were given
+            # Here we have 2 boolean variables conflict and command, as well as a dictionary
+
+            needed_deceleration = -1     # assume no deceleration needed
+            for speed_command in self.target_speeds:
+                if speed_command['s_target'] == 0: #if there is target distance = 0
+                    if speed_command['v_target']-self.v == 0:
+                        commanded_deceleration = 0
+                        print 'check'
+                    elif speed_command['v_target']-self.v > 0:
+                        commanded_deceleration = -self.comfort_acceleration #TODO acceleration is not needed when waiting in line
+                    else:
+                        commanded_deceleration = self.max_deceleration
                 else:
-    #                print str(self.id) + ' must decelerate at max! Current speed = ' + str(self.v)
-                    self.deceleration = self.max_deceleration
-            elif needed_deceleration == 0:
-                self.deceleration = 0
-            else:
+                    if self.v > 0:
+                        commanded_deceleration = (self.v-speed_command['v_target'])/(speed_command['s_target']/self.v) # deceleration based on command
+                    else:
+                        commanded_deceleration = -(speed_command['v_target']/speed_command['s_target'])
+                if commanded_deceleration > needed_deceleration:
+                    needed_deceleration = commanded_deceleration
+            # print str(self.id) + ': ' + str(self.target_speeds) + ', which is a needed deceleration of: ' + str(needed_deceleration)
+            if needed_deceleration == -1:
                 self.deceleration = -self.comfort_acceleration
+            else:
+                if needed_deceleration >= self.comfort_deceleration:
+                    if needed_deceleration < self.max_deceleration:
+                        # print str(self.id) + ' must decelerate! Current speed = ' + str(self.v)
+                        self.deceleration = needed_deceleration
+                    else:
+        #                print str(self.id) + ' must decelerate at max! Current speed = ' + str(self.v)
+                        self.deceleration = self.max_deceleration
+                elif needed_deceleration == 0:
+                    self.deceleration = 0
+                else:
+                    self.deceleration = -self.comfort_acceleration
 
 
    # checks all planes the radar has detected, which type of conflict would occure when within seperation
@@ -326,11 +330,15 @@ class aircraft:
                 
     # update hading
     def update_heading(self):
-        print('Going from [' + str(self.x_pos) + ',' + str(self.y_pos) + '] to [' + str(self.x_des) + ',' + str(self.y_des) + ']')
-        self.heading = atan2((self.y_des-self.y_pos), (self.x_des-self.x_pos))
+        # print('Going from [' + str(self.x_pos) + ',' + str(self.y_pos) + '] to [' + str(self.x_des) + ',' + str(self.y_des) + ']')
+        self.heading = self.calculate_heading(self.x_des,self.y_des)
+        print('Heading: ' + str(self.heading))
+
+    def calculate_heading(self,x_target,y_target):
+        heading = atan2((y_target-self.y_pos), (x_target-self.x_pos))
         if self.heading <0:
             self.heading = 2*pi + self.heading
-        print('Heading: ' + str(self.heading))
+        return heading
 
     # update current atc    
     def update_atc(self,new_atc):

@@ -62,6 +62,7 @@ def create_aircraft(idnumber,ATC_list,aircraft_list,runway_list,r,v_max,graph,t,
 
     # add plane to the responsible ATC
     ATC_list[ATC_gate].add_plane(new_plane)
+    ATC_list[ATC_gate].plan_operation(new_plane,graph,t)
 
     # have the first gate plan the operation
     # success, path = ATC_list[ATC_gate].get_path(graph,ATC_gate,ATC_runway)
@@ -94,7 +95,7 @@ def update_all_ATC(ATC_list,runway_list,graph,radar_range,runway_occupance_time,
         ### graph update
         ### heading and speed commands
         graph = atc.update(ATC_list,runway_list,v_max,graph,runway_occupance_time,dt,t) # check if commands for the plane are necessary and plan operation
-        aircraft_radar_list(atc)    # check for each aircraft which other plane are within a certain(radar) range
+        # aircraft_radar_list(atc)    # check for each aircraft which other plane are within a certain(radar) range
     return graph
 
 #check for each aircraft which other aircraft are within radar range
