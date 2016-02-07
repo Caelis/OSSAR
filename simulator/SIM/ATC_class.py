@@ -196,47 +196,62 @@ class ATC:
             self.plan_operation(plane,graph,t)
 
     def plan_operation(self,plane,graph,t):
+        if self.type == 1:
+            self.plan_operation_gate(graph,plane,t)
+        elif self.type == 2:
+            self.plan_operation_intersection(graph,plane,t)
+        elif self.type == 4:
+            self.plan_operation_runway(plane,t)
+        else:
+            'THIS IS NOT SUPPOSED TO HAPPEN! EACH PLANE MUST HAVE AN ATC!!!'
+
+    def plan_operation_gate(self,graph,plane,t):
+        success, path = self.get_path(graph,self.id,plane.atc_goal)
+        if success:
+            next_atc = path[1] #selects the next atc
+            # calculate new heading
+            turn_angle = self.calculate_heading_change(plane,next_atc)
+            self.set_operation_parameters(plane,next_atc,turn_angle,t)
+        else:
+            plane.stop = True
+    
+    def plan_operation_intersection(self,graph,plane,t):
+        success, path = self.get_path(graph,self.id,plane.atc_goal)
+        if success:
+            next_atc = path[1] #selects the next atc
+            # calculate new heading
+            turn_angle = self.calculate_heading_change(plane,next_atc) 
+            self.set_operation_parameters(plane,next_atc,turn_angle,t)
+        else:
+            plane.stop = True     
+
+    def plan_operation_runway(self,plane,t):
+        next_atc = self.id #selects the next atc
+        turn_angle = 0.5*pi # calculate the turn angle
+        self.set_operation_parameters(plane,next_atc,turn_angle,t)
+
+    def set_operation_parameters(self,plane,next_atc,turn_angle,t):
         par = {}
-        atc_type = self.type
         command_type = 'heading'
-        if atc_type == 1 or atc_type == 2:
-            success, path = self.get_path(graph,self.id,plane.atc_goal)
-            # if solution possible, command new heading/assign ATC
-            if success:#path has been found, so aircraft doensn't have to stop
-                plane.stop = False 
-                next_atc = path[1] #selects the next atc
-
-                # calculate new heading and distance
-                turn_angle = self.calculate_heading_change(plane,next_atc)
-                distance = hypot(plane.x_pos-self.x_handoff, plane.y_pos-self.y_handoff) #calculate at which distance the operation should be finished
-
-                # parameters of command
-                par['next_atc'] = next_atc
-                par['turn_angle'] = turn_angle
-                par['distance'] = distance
-
-                # send command to plane
-                plane_command = command(command_type, self.id, plane.id, t, 1, par) #1 = send
-                plane.op.append(plane_command)
-            # Otherwise tell the aircraft to stop immediately
-            else: # no path has been found, so aircraft has to stop
-#                print 'no path found'
-                plane.stop = True
-        if atc_type == 4:
-            next_atc = self.id #selects the next atc
-            turn_angle = 0.5*pi # calculate the turn angle
-            distance = hypot(plane.x_pos-self.x_handoff, plane.y_pos-self.y_handoff) #calculate at which distance the operation should be finished
-            par['next_atc'] = next_atc
-            par['turn_angle'] = turn_angle
-            par['distance'] = distance
-            plane_command = command(command_type, self.id, plane.id, t, 1, par) #1 = send
-            plane.op.append(plane_command)
+        plane.stop = False
+        distance = hypot(plane.x_pos-self.x_handoff, plane.y_pos-self.y_handoff) #calculate at which distance the operation should be finished
+        # parameters of command
+        par['next_atc'] = next_atc
+        par['turn_angle'] = turn_angle
+        par['distance'] = distance
+        # send command to plane
+        plane_command = command(command_type, self.id, plane.id, t, 1, par) #1 = send
+        plane.op.append(plane_command)
 
     def remove_plane(self,plane):
         self.locp.remove(plane)
 
     def add_plane(self,plane):
         self.locp.append(plane)
+
+##############################
+## Creating all ATC
+##############################
                     
 def create_ATC(wp_database,ATC_list):
     for i in xrange(len(wp_database)):
