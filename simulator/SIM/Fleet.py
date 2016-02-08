@@ -125,8 +125,9 @@ def update_aircraft(aircraft_list,plane_speed,t_stop_total,dt,separation,v_max,r
 
 def update_all_aircraft_position(aircraft_list,dt):
     for thisAircraft in aircraft_list:
-        if thisAircraft.stop:
-            print str(thisAircraft.id) + ' is stopped with: ' + str(thisAircraft.stop)
+        if thisAircraft.stop & 8:
+            # print str(thisAircraft.id) + ' is stopped with: ' + str(thisAircraft.stop)
+            print str(thisAircraft.id) + ' from: ' + str(thisAircraft.atc[0]) + ' to: ' + str(thisAircraft.atc_goal)
         # if not thisAircraft.stop:
         thisAircraft.update_pos(dt)
         thisAircraft.update_speed(dt)

@@ -101,7 +101,7 @@ def map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X
                 # id_string = 'Going from ' + str(plane.atc[0]) + ' to ' + str(plane.atc[1]) + ' dist: ' + str(round(plane.distance_to_atc,1))
 
                 if plane.stop:
-                    id_string = 'S!' + id_string
+                    id_string = 'S ' + str(plane.stop) + '!' + id_string
                 font = pg.font.Font(None, 14)
                 text = font.render(id_string, 1, (10, 10, 10))
                 center_x_id = plane.x_pos + 75

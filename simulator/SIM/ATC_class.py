@@ -93,17 +93,19 @@ class ATC:
             'THIS IS NOT SUPPOSED TO HAPPEN! EACH NODE MUST HAVE A TYPE!!!'
 
     def pre_handoff_intersection(self,plane,graph):
-        if plane.op[0].par.has_key('next_atc'):
+        plane.stop = plane.stop ^ (plane.stop & 2)
+        if plane.op[-1].par.has_key('next_atc'):
             target_atc = plane.atc[1] # Where the plane is currently going to
-            next_atc = plane.op[0].par['next_atc'] # where the plane is going to next
+            next_atc = plane.op[-1].par['next_atc'] # where the plane is going to next
             if graph.has_edge(target_atc,next_atc):
                 plane.ready_for_hand_off = True
                 self.increase_graph_density(graph,target_atc,next_atc)
                 plane.stop = plane.stop ^ (plane.stop & 2)
                 # print 'Pre Handoff successfull Plane ' + str(plane.id) + ' ATC: ' + str(self.id)
             else:
-                print 'Emergency stop Plane ' + str(plane.id) + ' ATC: ' + str(self.id)
                 plane.stop = plane.stop | 2
+                print 'Emergency stop Plane ' + str(plane.id) + ' ATC: ' + str(self.id) + ' code: ' + str(plane.stop) + ' to: ' + str(plane.atc_goal)
+
         else:
             plane.stop = plane.stop | 2
 
@@ -153,7 +155,7 @@ class ATC:
         ## Define the ATCs
         source_atc = plane.atc[0] # Where the plane is coming from
         target_atc = plane.atc[1] # Where the plane is currently going to
-        next_atc = plane.op[0].par['next_atc'] # where the plane is going to next
+        next_atc = plane.op[-1].par['next_atc'] # where the plane is going to next
         if graph.has_edge(source_atc,target_atc):
             plane.stop = plane.stop ^ (plane.stop & 1)
             ## update graph density
@@ -247,18 +249,18 @@ class ATC:
     #check if a plane needs a command
     def plan_operations(self,graph,t):
         for plane in self.locp:
-            # if not plane.stop: # plan operation
+            if not plane.ready_for_hand_off: # once the aircraft has crossed the "pre handoff threshold", don't change the operations any more
                 self.plan_operation(plane,graph,t)
 
     def plan_operation(self,plane,graph,t):
+        tempGraph = graph # to remove the link the aircraft came from. this avoids 18 degree turns
         par = {}
         atc_type = self.type
         command_type = 'heading'
         if atc_type == 1 or atc_type == 2:
             # avoid 180 degree turns by removing the source edge from graph
-            # graph.remove_edges_from([(plane.atc[1],plane.atc[0])])
-            success, path = self.get_path(graph,self.id,plane.atc_goal)
-            # self.add_edge_back_to_graph(graph,plane.atc[1],plane.atc[0])
+            tempGraph.remove_edges_from([(plane.atc[1],plane.atc[0])])
+            success, path = self.get_path(tempGraph,self.id,plane.atc_goal)
             # if solution possible, command new heading/assign ATC
             if success:#path has been found, so aircraft doensn't have to stop
                 plane.stop = plane.stop ^ (plane.stop & 8)

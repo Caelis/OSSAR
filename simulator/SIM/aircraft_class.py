@@ -58,10 +58,10 @@ class aircraft:
 
     def update(self,separation,v_max,t,dt):
         this_t_stop = 0
-        if not self.stop:       # if the plane has a goal_atc, continue to decision making
-            self.decision_making(separation,v_max,dt)
-        else:                   # if the plane does not have a goal atc, it should stop
-            self.deceleration = self.max_deceleration
+        # if not self.stop:       # if the plane has a goal_atc, continue to decision making
+        self.decision_making(separation,v_max,dt)
+        # else:                   # if the plane does not have a goal atc, it should stop
+        # self.deceleration = self.max_deceleration
         #self.update_speed(dt)   # update plane speed
         #self.update_pos(dt)     # update the position of each aircraf decide to accelerate or deceleratet
         if self.v < 0.05:        # each time step calculate the total stopping time
@@ -280,9 +280,9 @@ class aircraft:
 
     # update speed
     def update_speed(self,dt):
-        if self.stop:
-            # print('AC: ' + str(self.id) + ' stopped in update_speed')
-            self.deceleration = self.max_deceleration
+        # if self.stop:
+        #     # print('AC: ' + str(self.id) + ' stopped in update_speed')
+        #     self.deceleration = self.max_deceleration
         new_speed = self.v - (dt*self.deceleration)
         if new_speed > 0:
             self.v = new_speed
