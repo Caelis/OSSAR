@@ -108,9 +108,9 @@ def aircraft_radar_list(atc):
             occupied_links.append(plane.atc[0])
             link_planes.append(plane)
     if len(occupied_links) == possible_handovers and possible_handovers > 1: #TODO temporary solution
-        print 'deadlock at atc: ', atc.id
-        print 'occupied_links: ', occupied_links
-        print 'possible_handovers', possible_handovers
+        # print 'deadlock at atc: ', atc.id
+        # print 'occupied_links: ', occupied_links
+        # print 'possible_handovers', possible_handovers
         for aircraft in link_planes:
             atc.locp.remove(aircraft)
 
@@ -125,9 +125,11 @@ def update_aircraft(aircraft_list,plane_speed,t_stop_total,dt,separation,v_max,r
 
 def update_all_aircraft_position(aircraft_list,dt):
     for thisAircraft in aircraft_list:
+        if thisAircraft.stop:
+            print str(thisAircraft.id) + ' is stopped with: ' + str(thisAircraft.stop)
         # if not thisAircraft.stop:
-            thisAircraft.update_pos(dt)
-            thisAircraft.update_speed(dt)
+        thisAircraft.update_pos(dt)
+        thisAircraft.update_speed(dt)
         # else:
         #     print 'Aircraft' + str(thisAircraft.id) + ' is stopped!'
 

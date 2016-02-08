@@ -41,12 +41,13 @@ class runway:
     def take_off(self,plane,runway_occupance_time,ATC_list,graph):
         if self.waiting_list: #If there is a waiting list
             if not self.occupance:  # If the runway is not occupied
+                plane.stop = plane.stop ^ (plane.stop & 16)
                 plane = self.waiting_list[0]
                 self.occupance = runway_occupance_time       # set occupancy time
                 ATC_list[plane.atc[1]].remove_plane(plane)  # remove plane from ATC
                 self.waiting_list.remove(plane)         # remove plane from waiting_list
             else:
-                plane.stop = True
+                plane.stop = plane.stop | 16
 
 def create_runway(idnumber,ATC_list,runway_list):
     runway_nodes = [[18,19],[20,21]]    

@@ -84,25 +84,37 @@ class ATC:
 
     def pre_handoff_type_select(self,aircraft,graph):
         if self.type == 4:
-            pass
+            self.pre_handoff_runway(aircraft,graph)
         elif self.type == 1:
-            pass
+            self.pre_handoff_gate(aircraft,graph)
         elif self.type == 2:
             self.pre_handoff_intersection(aircraft,graph)
         else:
             'THIS IS NOT SUPPOSED TO HAPPEN! EACH NODE MUST HAVE A TYPE!!!'
 
     def pre_handoff_intersection(self,plane,graph):
-        target_atc = plane.atc[1] # Where the plane is currently going to
-        next_atc = plane.op[0].par['next_atc'] # where the plane is going to next
-        if graph.has_edge(target_atc,next_atc):
-            print 'Pre Handoff successfull Plane ' + str(plane.id) + ' ATC: ' + str(self.id)
-            plane.ready_for_hand_off = True
-            self.increase_graph_density(graph,target_atc,next_atc)
+        if plane.op[0].par.has_key('next_atc'):
+            target_atc = plane.atc[1] # Where the plane is currently going to
+            next_atc = plane.op[0].par['next_atc'] # where the plane is going to next
+            if graph.has_edge(target_atc,next_atc):
+                plane.ready_for_hand_off = True
+                self.increase_graph_density(graph,target_atc,next_atc)
+                plane.stop = plane.stop ^ (plane.stop & 2)
+                # print 'Pre Handoff successfull Plane ' + str(plane.id) + ' ATC: ' + str(self.id)
+            else:
+                print 'Emergency stop Plane ' + str(plane.id) + ' ATC: ' + str(self.id)
+                plane.stop = plane.stop | 2
         else:
-            print 'Emergency stop Plane ' + str(plane.id) + ' ATC: ' + str(self.id)
-            time.sleep(10)
-            plane.stop = True
+            plane.stop = plane.stop | 2
+
+    def pre_handoff_gate(self,plane,graph):
+        plane.stop = plane.stop ^ (plane.stop & 32)
+        plane.ready_for_hand_off = True
+
+    def pre_handoff_runway(self,plane,graph):
+        plane.stop = plane.stop ^ (plane.stop & 16)
+        plane.ready_for_hand_off = True
+
 
 ##############################
 ## Hand-off
@@ -111,13 +123,13 @@ class ATC:
         for aircraft in self.locp:
             # Pre-handoff decision
             if not aircraft.check_if_ac_can_stop(aircraft.distance_to_atc,'comfort') and not aircraft.ready_for_hand_off:
-                aircraft.ready_for_hand_off = True
                 self.pre_handoff_type_select(aircraft,graph)
             # Handoff decision
             if aircraft.distance_to_atc <= 0 and not aircraft.handed_off and aircraft.ready_for_hand_off:
                 aircraft.ready_for_hand_off = False
                 aircraft.handed_off = True
-                print 'Handoff aircraft ' + str(aircraft.id)
+                # aircraft.stop = False
+                # print 'Handoff aircraft ' + str(aircraft.id)
                 self.plane_handoff(aircraft,ATC_list,graph,runway_list,runway_occupance_time)
 
     def plane_handoff(self,plane,ATC_list,graph,runway_list,runway_occupance_time):
@@ -142,17 +154,17 @@ class ATC:
         source_atc = plane.atc[0] # Where the plane is coming from
         target_atc = plane.atc[1] # Where the plane is currently going to
         next_atc = plane.op[0].par['next_atc'] # where the plane is going to next
-        try:
+        if graph.has_edge(source_atc,target_atc):
+            plane.stop = plane.stop ^ (plane.stop & 1)
             ## update graph density
-            # self.increase_graph_density(graph,target_atc,next_atc)
             self.decrease_graph_density(graph,source_atc,target_atc)
             ## process the aircraft handoff
             plane.process_handoff(next_atc,float(wp_database[self.id][1]), float(wp_database[self.id][2]), float(wp_database[next_atc][1]), float(wp_database[next_atc][2]))
             ## update plane -> atc assignment
             ATC_list[next_atc].add_plane(plane) # add to next ATC
             self.remove_plane(plane)
-        except:
-            plane.stop = True
+        else:
+            plane.stop = plane.stop | 1
 
     def plane_handoff_gate(self,plane,ATC_list,graph):
         success, path = self.get_path(graph,self.id,plane.atc_goal)
@@ -208,9 +220,9 @@ class ATC:
 ##############################
     def increase_graph_density(self,graph,source,target):
         graph[source][target]['density'] += 1
-        print 'Density now is ' + str(graph[source][target]['density'])
+        # print 'Density now is ' + str(graph[source][target]['density'])
         if graph[source][target]['density'] > 0:
-            print 'edge removed'
+            # print 'edge removed'
             graph.remove_edges_from([(target,source)])
 
     def decrease_graph_density(self,graph,source,target):
@@ -219,12 +231,15 @@ class ATC:
         graph[source][target]['density'] -= 1
         # if the no more planes on this link, add link in the other direction
         if graph[source][target]['density'] == 0:
-            print 'edge added from ' + str(target) + ' to ' + str(source)
-            distance = hypot((wp_database[target][1]-wp_database[source][1]),(wp_database[target][2]-wp_database[source][2]))
-            value =  distance / 30*0.5144 #TODO replace 30 with v_max
-            graph.add_weighted_edges_from([(target,source,value)])
-            graph[target][source]['distance']=distance
-            graph[target][source]['density']=0
+            # print 'edge added from ' + str(target) + ' to ' + str(source)
+            self.add_edge_back_to_graph(graph,target,source)
+
+    def add_edge_back_to_graph(self,graph,source,target):
+        distance = hypot((wp_database[source][1]-wp_database[target][1]),(wp_database[source][2]-wp_database[target][2]))
+        value =  distance / 30*0.5144 #TODO replace 30 with v_max
+        graph.add_weighted_edges_from([(source,target,value)])
+        graph[source][target]['distance']=distance
+        graph[source][target]['density']=0
 
 ##############################
 ## Command functions
@@ -232,18 +247,21 @@ class ATC:
     #check if a plane needs a command
     def plan_operations(self,graph,t):
         for plane in self.locp:
-            # plan operation
-            self.plan_operation(plane,graph,t)
+            # if not plane.stop: # plan operation
+                self.plan_operation(plane,graph,t)
 
     def plan_operation(self,plane,graph,t):
         par = {}
         atc_type = self.type
         command_type = 'heading'
         if atc_type == 1 or atc_type == 2:
+            # avoid 180 degree turns by removing the source edge from graph
+            # graph.remove_edges_from([(plane.atc[1],plane.atc[0])])
             success, path = self.get_path(graph,self.id,plane.atc_goal)
+            # self.add_edge_back_to_graph(graph,plane.atc[1],plane.atc[0])
             # if solution possible, command new heading/assign ATC
             if success:#path has been found, so aircraft doensn't have to stop
-                plane.stop = False 
+                plane.stop = plane.stop ^ (plane.stop & 8)
                 next_atc = path[1] #selects the next atc
 
                 # calculate new heading and distance
@@ -259,9 +277,13 @@ class ATC:
                 plane_command = command(command_type, self.id, plane.id, t, 1, par) #1 = send
                 plane.op.append(plane_command)
             # Otherwise tell the aircraft to stop immediately
-            else: # no path has been found, so aircraft has to stop
-#                print 'no path found'
-                plane.stop = True
+            else: # no path has been found, so aircraft has to stop at intersection
+                # par['distance'] = plane.distance_to_atc
+                # par['v_target'] = 0
+                # plane_command = command('speed', self.id, plane.id, t, 1, par)
+                # plane.op.append(plane_command)
+                # print 'no path found. Trying to go from ' + str(self.id) + ' to ' + str(plane.atc_goal)
+                plane.stop = plane.stop | 8
         if atc_type == 4:
             next_atc = self.id #selects the next atc
             turn_angle = 0.5*pi # calculate the turn angle
