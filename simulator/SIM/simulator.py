@@ -61,7 +61,7 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
 
 
     #create all runways
-    idnumber_rw, runway_list = create_runway(idnumber_rw,ATC_list,runway_list)    
+    idnumber_rw, runway_list = create_runway(idnumber_rw,ATC_list,runway_list,runway_occupance_time)
     
     # initiate the Dijksta algorithm
     taxiwayGraph0 = initiate_dijkstra(v_max)
@@ -69,7 +69,7 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
     #simulator loop
     taxiwayGraph = nx.DiGraph(taxiwayGraph0)
     while running == True:
-        print 'Time is: ' + str(t)
+        # print 'Time is: ' + str(t)
         # time.sleep(5)
         # taxiwayGraph = nx.DiGraph(taxiwayGraph0)
 
