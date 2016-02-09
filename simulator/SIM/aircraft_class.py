@@ -49,22 +49,40 @@ class aircraft:
         self.comfort_acceleration = 0.8
         self.deceleration = 0
         self.conflict = ''
-        self.stop = True           #Becomes True if the aircraft has no goal -> aircraft stops
+        self.stop = 32           #Becomes True if the aircraft has no goal -> aircraft stops
         self.distance_to_atc = 0    #Distance to the current assigned ATC
         self.isActive = True        # To check if an aircraft is active or not.
         self.handed_off = False     # TO check if aircraft was handed off
+        self.ready_for_hand_off = False     # TO check if aircraft is_ready_for_hand_off
+
 
     def update(self,separation,v_max,t,dt):
         this_t_stop = 0
-        if not self.stop:       # if the plane has a goal_atc, continue to decision making
-            self.decision_making(separation,v_max,dt)
-        else:                   # if the plane does not have a goal atc, it should stop
-            self.deceleration = self.max_deceleration
+        # if not self.stop:       # if the plane has a goal_atc, continue to decision making
+        self.decision_making(separation,v_max,dt)
+        # else:                   # if the plane does not have a goal atc, it should stop
+        # self.deceleration = self.max_deceleration
         #self.update_speed(dt)   # update plane speed
         #self.update_pos(dt)     # update the position of each aircraf decide to accelerate or deceleratet
         if self.v < 0.05:        # each time step calculate the total stopping time
             this_t_stop = dt
         return self.v, this_t_stop
+
+    def check_if_ac_can_stop(self,distance,type):
+        if distance >= self.stopping_distance(type):
+            return True
+        else:
+            return False
+
+    def stopping_distance(self,type):
+        if type == 'comfort':
+            deceleration = self.comfort_deceleration
+        elif type == 'emergncy':
+            deceleration = self.max_deceleration
+        distance = ((self.v)*(self.v))/(2*deceleration)
+        return distance
+
+
 
     def process_handoff(self,next_atc,x_beg,y_beg,x_des,y_des):
         self.op = []
@@ -84,9 +102,10 @@ class aircraft:
     def decision_making(self,separation,v_max,dt):
         self.target_speeds = []
         if self.stop:
+            # print('AC: ' + str(self.id) + ' stopped in decision_making')
             self.deceleration = self.max_deceleration
         else:
-            self.deceleration = 0        # always accelerate!
+            self.deceleration = -self.comfort_acceleration        # always accelerate!
     #        conflict = True
             #  check for collision
             conflict = self.conflict_avoidance(separation)         # perform a collision avoidanace check for all planes within aircraft range
@@ -98,7 +117,7 @@ class aircraft:
                 if speed_command['s_target'] == 0: #if there is target distance = 0
                     if speed_command['v_target']-self.v == 0:
                         commanded_deceleration = 0
-                        print 'check'
+                        # print 'check'
                     elif speed_command['v_target']-self.v > 0:
                         commanded_deceleration = -self.comfort_acceleration #TODO acceleration is not needed when waiting in line
                     else:
@@ -259,69 +278,11 @@ class aircraft:
         par_command.update({'s_target': distance})
         return par_command
 
-#    #checks if the collision avoidence or the command is the minimum speed
-#    def check_minimumspeed(self,brake,v_max):
-#        if self.par_avoid:                                      # check whether there are avoidence parameters
-#            self.v_limit = self.par_avoid['v_limit']
-#            if brake:
-#                self.v_target = self.par_avoid['v_target']  
-#                self.s_target = self.par_avoid['s_target']
-#            elif self.par_command['s_target'] != 0 or self.v_target == False or self.par_avoid['v_limit'] < self.par_command['v_target'] and self.par_command['s_target'] == 0:
-#                self.v_target = self.par_avoid['v_limit']
-#                self.s_target = self.par_avoid['s_target']
-#            elif self.par_avoid['v_limit'] > self.par_command['v_target'] and self.par_command['s_target'] == 0:
-#                self.target = self.par_command['v_target']
-#                self.s_target = self.par_command['s_target']
-#            else:
-#                self.v_target = self.par_command['v_target']
-#                self.s_target = self.par_command['s_target']
-#        else:
-#            if self.par_command:
-#                self.v_target = self.par_command['v_target']
-#            else:
-#                self.v_target = v_max
-#                self.s_target = 0.1
-
-    # #execute commands given to this aircraft this timestep
-    # def execute(self,v_max,brake,dt):
-    #     dcc_dist = 1.5*(v_max)**2/self.dcc          # calculate the maximum distance needed to deccelerate
-    #     if not brake and self.s_target > dcc_dist:  # when the plane doesn't have to brake and it still has some distance to taxi until target speed needs to be achieved
-    #         if self.v < v_max:
-    #             new_speed = self.v + dt * (float(data[self.type][4])*0.51444)   # accelerate to maximum speed
-    #             if new_speed > v_max:
-    #                 new_speed = v_max
-    #             self.update_speed(new_speed)
-    #         self.s_target = self.s_target - self.v*dt
-    #     elif self.s_target < v_max*dt or self.s_target == False:  #if no target distance/distance is reached, change speed
-    #         self.check_speed(v_max,brake,dt)
-    #     else:
-    #         self.s_target = self.s_target - self.v*dt
-  
-    # update speed
-    # def check_speed(self,v_max,brake,dt):
-    #     if self.v_target == False:
-    #         if self.v != v_max:
-    #             new_speed = self.v + dt * (float(data[self.type][4])*0.51444)   # accelerate to maximum speed
-    #             if new_speed > v_max:
-    #                 new_speed = v_max
-    #             self.update_speed(new_speed)
-    #     elif self.v < self.v_target:
-    #         new_speed = self.v + dt * (float(data[self.type][4])*0.51444)       # accelerate to target speed
-    #         if new_speed > self.v_target:
-    #             self.v = self.v_target
-    #             self.update_speed(self.v_target)
-    #         else:
-    #             self.update_speed(new_speed)
-    #     elif self.v > self.v_target:
-    #         new_speed = self.v - dt * (float(data[self.type][3])*0.51444)       # deccelerate to target speed
-    #         if new_speed < self.v_target:
-    #             self.v = self.v_target
-    #             self.update_speed(self.v_target)
-    #         else:
-    #             self.update_speed(new_speed)
-
     # update speed
     def update_speed(self,dt):
+        # if self.stop:
+        #     # print('AC: ' + str(self.id) + ' stopped in update_speed')
+        #     self.deceleration = self.max_deceleration
         new_speed = self.v - (dt*self.deceleration)
         if new_speed > 0:
             self.v = new_speed
@@ -330,9 +291,10 @@ class aircraft:
                 
     # update hading
     def update_heading(self):
-        # print('Going from [' + str(self.x_pos) + ',' + str(self.y_pos) + '] to [' + str(self.x_des) + ',' + str(self.y_des) + ']')
-        self.heading = self.calculate_heading(self.x_des,self.y_des)
-        print('Heading: ' + str(self.heading))
+        if not self.stop:
+            # print('Going from [' + str(self.x_pos) + ',' + str(self.y_pos) + '] to [' + str(self.x_des) + ',' + str(self.y_des) + ']')
+            self.heading = self.calculate_heading(self.x_des,self.y_des)
+            # print('Heading: ' + str(self.heading))
 
     def calculate_heading(self,x_target,y_target):
         heading = atan2((y_target-self.y_pos), (x_target-self.x_pos))

@@ -1,3 +1,4 @@
 import networkx as nx
 class NetworkXNoPath(nx.NetworkXException):
-    print 'this worked'
+    pass
+    # print 'this worked'
