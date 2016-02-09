@@ -294,22 +294,24 @@ class ATC:
     def plan_operation_gate(self,graph,plane,t):
         success, path = self.get_path(graph,self.id,plane.atc_goal)
         if success:
+            plane.stop = plane.stop ^ (plane.stop & 8)
             next_atc = path[1] #selects the next atc
             # calculate new heading
             turn_angle = self.calculate_heading_change(plane,next_atc)
             self.set_operation_parameters(plane,next_atc,turn_angle,t)
         else:
-            plane.stop = True
+            plane.stop = plane.stop | 8
     
     def plan_operation_intersection(self,graph,plane,t):
         success, path = self.get_path(graph,self.id,plane.atc_goal)
         if success:
+            plane.stop = plane.stop ^ (plane.stop & 8)
             next_atc = path[1] #selects the next atc
             # calculate new heading
             turn_angle = self.calculate_heading_change(plane,next_atc) 
             self.set_operation_parameters(plane,next_atc,turn_angle,t)
         else:
-            plane.stop = True     
+            plane.stop = plane.stop | 8
 
     def plan_operation_runway(self,plane,t):
         next_atc = self.id #selects the next atc
