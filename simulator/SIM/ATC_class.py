@@ -40,6 +40,7 @@ class ATC:
         self.y_handoff = y_handoff      # y-coordinate at which a aircraft should be handed over
         self.throughput = False         # thoughput of ATC
         self.par = []
+        self.runway = False             # for a runway ATC the runway that it has associated
 
     # def update_aircraft_distance(self):
     #     for thisPlane in self.locp:
@@ -84,6 +85,7 @@ class ATC:
 
     def pre_handoff_type_select(self,aircraft,graph):
         if self.type == 4:
+            print 'Handoff at Runway'
             self.pre_handoff_runway(aircraft,graph)
         elif self.type == 1:
             self.pre_handoff_gate(aircraft,graph)
@@ -114,8 +116,22 @@ class ATC:
         plane.ready_for_hand_off = True
 
     def pre_handoff_runway(self,plane,graph):
-        plane.stop = plane.stop ^ (plane.stop & 16)
-        plane.ready_for_hand_off = True
+        print 'Check pre-handoff for plane ',plane.id
+        print 'The handoff-status is: ',plane.ready_for_hand_off
+        # check if aircraft is in Waiting list
+        if not plane.id in self.runway.waiting_list:
+            self.runway.waiting_list.append(plane.id)
+            print self.runway.waiting_list[0]
+
+        # check if the runwya is available for a departure
+        if self.runway.is_occupied():
+            plane.stop = plane.stop | 16
+        else:
+            if self.runway.waiting_list[0] == plane.id:
+                print 'Check worked'
+                plane.stop = plane.stop ^ (plane.stop & 16)
+                plane.ready_for_hand_off = True
+                self.runway.reset_occupance()
 
 
 ##############################
@@ -124,7 +140,7 @@ class ATC:
     def handoff_decisions(self,ATC_list,graph,runway_list,runway_occupance_time):
         for aircraft in self.locp:
             # Pre-handoff decision
-            if not aircraft.check_if_ac_can_stop(aircraft.distance_to_atc,'comfort') and not aircraft.ready_for_hand_off:
+            if ((not aircraft.check_if_ac_can_stop(aircraft.distance_to_atc,'comfort')) or aircraft.stop & 16) and not aircraft.ready_for_hand_off:
                 self.pre_handoff_type_select(aircraft,graph)
             # Handoff decision
             if aircraft.distance_to_atc <= 0 and not aircraft.handed_off and aircraft.ready_for_hand_off:
@@ -145,11 +161,22 @@ class ATC:
             'THIS IS NOT SUPPOSED TO HAPPEN! EACH NODE MUST HAVE A TYPE!!!'
 
     def plane_handoff_runway(self,plane,ATC_list,graph,runway_list,runway_occupance_time):
-        plane_atc = ATC_list[plane.atc[1]]
-        runway = runway_list[plane_atc.par[0]['runway_id']]
-        if plane not in runway.waiting_list:
-            runway.waiting_list.append(plane)
-        runway.take_off(plane,runway_occupance_time,ATC_list,graph)
+        source_atc = plane.atc[0] # Where the plane is coming from
+        target_atc = plane.atc[1] # Where the plane is currently going to
+        # make sure that AC in waiting list of runway
+        if plane.id in self.runway.waiting_list:
+            # if the runwya is available
+            print 'occupance is:',self.runway.occupance
+            # if not self.runway.occupance > 0:
+            plane.stop = plane.stop ^ (plane.stop & 16)
+            # plane = self.waiting_list[0]
+            self.runway.reset_occupance()       # reset occupancy time
+            ATC_list[plane.atc[1]].remove_plane(plane)  # remove plane from ATC
+            self.runway.waiting_list.remove(plane.id)         # remove plane from waiting_list
+            self.decrease_graph_density(graph,source_atc,target_atc)
+        else:
+            print 'BIG problem!!!'
+
 
     def plane_handoff_intersection(self,plane,ATC_list,graph):
         ## Define the ATCs
@@ -261,6 +288,7 @@ class ATC:
             # avoid 180 degree turns by removing the source edge from graph
             tempGraph.remove_edges_from([(plane.atc[1],plane.atc[0])])
             success, path = self.get_path(tempGraph,self.id,plane.atc_goal)
+
             # if solution possible, command new heading/assign ATC
             if success:#path has been found, so aircraft doensn't have to stop
                 plane.stop = plane.stop ^ (plane.stop & 8)

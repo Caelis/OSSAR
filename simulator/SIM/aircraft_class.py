@@ -105,7 +105,7 @@ class aircraft:
             # print('AC: ' + str(self.id) + ' stopped in decision_making')
             self.deceleration = self.max_deceleration
         else:
-            self.deceleration = 0        # always accelerate!
+            self.deceleration = -self.comfort_acceleration        # always accelerate!
     #        conflict = True
             #  check for collision
             conflict = self.conflict_avoidance(separation)         # perform a collision avoidanace check for all planes within aircraft range
