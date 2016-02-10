@@ -57,7 +57,7 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
     # create an empty list of aircraft
     aircraft_list = []
     # create an empty list of aircraft that have been removed
-    aircraft_list_removed = []
+    inactive_aircraft_list = []
 
 
     #create all runways
@@ -106,6 +106,11 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
 
         # add aircraft
         t_next_aircraft, create, idnumber = aircraft_interval(t_next_aircraft,idnumber,ATC_list,aircraft_list,runway_list,r,v_max,create,mean,std,taxiwayGraph,t,dt)
+
+        # remove aircraft that took off
+        remove_inactive_aircraft(aircraft_list,inactive_aircraft_list)
+
+        # print 'Active: ',len(aircraft_list),' Inactive: ',len(inactive_aircraft_list)
 
         #if True, run map
         if Map == True:

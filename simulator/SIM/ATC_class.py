@@ -85,7 +85,7 @@ class ATC:
 
     def pre_handoff_type_select(self,aircraft,graph):
         if self.type == 4:
-            print 'Handoff at Runway'
+            # print 'Handoff at Runway'
             self.pre_handoff_runway(aircraft,graph)
         elif self.type == 1:
             self.pre_handoff_gate(aircraft,graph)
@@ -116,19 +116,18 @@ class ATC:
         plane.ready_for_hand_off = True
 
     def pre_handoff_runway(self,plane,graph):
-        print 'Check pre-handoff for plane ',plane.id
-        print 'The handoff-status is: ',plane.ready_for_hand_off
+        # print 'Check pre-handoff for plane ',plane.id
+        # print 'The handoff-status is: ',plane.ready_for_hand_off
         # check if aircraft is in Waiting list
         if not plane.id in self.runway.waiting_list:
             self.runway.waiting_list.append(plane.id)
-            print self.runway.waiting_list[0]
-
+            # print self.runway.waiting_list[0]
         # check if the runwya is available for a departure
         if self.runway.is_occupied():
             plane.stop = plane.stop | 16
         else:
             if self.runway.waiting_list[0] == plane.id:
-                print 'Check worked'
+                # print 'Check worked'
                 plane.stop = plane.stop ^ (plane.stop & 16)
                 plane.ready_for_hand_off = True
                 self.runway.reset_occupance()
@@ -166,14 +165,16 @@ class ATC:
         # make sure that AC in waiting list of runway
         if plane.id in self.runway.waiting_list:
             # if the runwya is available
-            print 'occupance is:',self.runway.occupance
+            # print 'occupance is:',self.runway.occupance
             # if not self.runway.occupance > 0:
             plane.stop = plane.stop ^ (plane.stop & 16)
             # plane = self.waiting_list[0]
             self.runway.reset_occupance()       # reset occupancy time
-            ATC_list[plane.atc[1]].remove_plane(plane)  # remove plane from ATC
+            # ATC_list[plane.atc[1]].remove_plane(plane)  # remove plane from ATC
             self.runway.waiting_list.remove(plane.id)         # remove plane from waiting_list
             self.decrease_graph_density(graph,source_atc,target_atc)
+            plane.is_active = False
+            self.remove_plane(plane)
         else:
             print 'BIG problem!!!'
 
