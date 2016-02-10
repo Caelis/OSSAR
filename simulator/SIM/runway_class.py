@@ -38,12 +38,12 @@ class runway:
         self.occupance = self.default_runway_occupance_time
 
     def is_occupied(self):
-        print 'occupance is ',self.occupance,' that is why we return '
+        # print 'occupance is ',self.occupance,' that is why we return '
         if self.occupance > 0:
-            print 'True'
+            # print 'True'
             return True
         else:
-            print 'False'
+            # print 'False'
             return False
 
 def create_runway(idnumber,ATC_list,runway_list,runway_occupance_time):

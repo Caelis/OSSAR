@@ -125,19 +125,23 @@ def update_aircraft(aircraft_list,plane_speed,t_stop_total,dt,separation,v_max,r
 
 def update_all_aircraft_position(aircraft_list,dt):
     for thisAircraft in aircraft_list:
-        if thisAircraft.stop & 8:
-            # print str(thisAircraft.id) + ' is stopped with: ' + str(thisAircraft.stop)
-            print str(thisAircraft.id) + ' from: ' + str(thisAircraft.atc[0]) + ' to: ' + str(thisAircraft.atc_goal)
-        # if not thisAircraft.stop:
+        # if thisAircraft.stop & 8:
+        #     # print str(thisAircraft.id) + ' is stopped with: ' + str(thisAircraft.stop)
+        #     print str(thisAircraft.id) + ' from: ' + str(thisAircraft.atc[0]) + ' to: ' + str(thisAircraft.atc_goal)
         thisAircraft.update_pos(dt)
         thisAircraft.update_speed(dt)
-        # else:
-        #     print 'Aircraft' + str(thisAircraft.id) + ' is stopped!'
 
 def update_all_aircraft_radar(plane_list,radar_range):
     for plane1 in plane_list:       # loop through all planes in the simulator
+        plane1.radar = []
         for plane2 in plane_list:   # loop through all planes to compare to planes from above loop
             if hypot((plane2.x_pos-plane1.x_pos),(plane2.y_pos-plane1.y_pos)) < radar_range and plane1.id != plane2.id: # When aircrafts are within radarrange(exluding self):
                 plane1.radar.append(plane2) # append plane to plane1.radar for check if avoidence is necessary
 
+
+def remove_inactive_aircraft(aircraft_list,inactive_aircraft_list):
+    for aircraft in aircraft_list:
+        if not aircraft.is_active:
+            inactive_aircraft_list.append(aircraft)
+            aircraft_list.remove(aircraft)
 

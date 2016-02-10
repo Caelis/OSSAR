@@ -51,7 +51,7 @@ class aircraft:
         self.conflict = ''
         self.stop = 32           #Becomes True if the aircraft has no goal -> aircraft stops
         self.distance_to_atc = 0    #Distance to the current assigned ATC
-        self.isActive = True        # To check if an aircraft is active or not.
+        self.is_active = True        # To check if an aircraft is active or not.
         self.handed_off = False     # TO check if aircraft was handed off
         self.ready_for_hand_off = False     # TO check if aircraft is_ready_for_hand_off
 
@@ -81,8 +81,6 @@ class aircraft:
             deceleration = self.max_deceleration
         distance = ((self.v)*(self.v))/(2*deceleration)
         return distance
-
-
 
     def process_handoff(self,next_atc,x_beg,y_beg,x_des,y_des):
         self.op = []
@@ -151,8 +149,10 @@ class aircraft:
         self.conflict = ''
         conflict = False                                                           # set brake is False (no braking necessary)
         for plane in self.radar:                                                # loop through all planes within radar range
-            self_dist = hypot((self.x_pos-self.x_des), (self.y_pos-self.y_des))         # determine own distance to atc
-            plane_dist = hypot((plane.x_pos-plane.x_des), (plane.y_pos-plane.y_des))    # determine other plane's distance to/from atc
+            # self_dist = hypot((self.x_pos-self.x_des), (self.y_pos-self.y_des))         # determine own distance to atc
+            self_dist = self.distance_to_atc
+            # plane_dist = hypot((plane.x_pos-plane.x_des), (plane.y_pos-plane.y_des))    # determine other plane's distance to/from atc
+            plane_dist = plane.distance_to_atc
             if self.atc == plane.atc:                                           # check if planes are on the same link (self.atc1 = plane.atc1 and self.atc2 = plane.atc2)
                 conflict = self.conflict_avoidence_link(conflict,plane,min_separation,self_dist,plane_dist)     # execute collision avoidence for same link
                 if conflict:
