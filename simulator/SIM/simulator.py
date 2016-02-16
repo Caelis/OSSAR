@@ -23,7 +23,7 @@ import networkx as nx
 
 #import data
 from data_import import wpl_database
-
+from data_export import *
 def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
     #initializing values
     idnumber = 0
@@ -68,8 +68,11 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
 
     #simulator loop
     taxiwayGraph = nx.DiGraph(taxiwayGraph0)
+
+    # perpare for export
+    position_array = []
     while running == True:
-        # print 'Time is: ' + str(t)
+        print 'Time is: ' + str(t)
         # time.sleep(5)
         # taxiwayGraph = nx.DiGraph(taxiwayGraph0)
 
@@ -84,28 +87,21 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
 
         # update ATC (decision making here)
         taxiwayGraph = update_all_ATC(ATC_list,runway_list,taxiwayGraph,radar_range,runway_occupance_time,dt,t,v_max)
-        ## radar (distance of aircraft from ATC)
-        ## handoff decision
-        ## graph update
-        ## heading and speed commands
 
 
         # update aircraft (decision making)
+        t_stop_total,plane_speed = update_aircraft(aircraft_list,plane_speed,t_stop_total,dt,separation,v_max,radar_range,t)
         ## update radar of all ac
         ## each aircraft
         ### conflict detection
         ### speed decision
         ### heading decision
 
-        #create new aircraft if nessecary
-        #create and execute commands
-        # excecute all commands
-        # execute_commands(ATC_list,separation,v_max,t,dt)
-        #update the aicraft position
-        t_stop_total,plane_speed = update_aircraft(aircraft_list,plane_speed,t_stop_total,dt,separation,v_max,radar_range,t)
-
         # add aircraft
         t_next_aircraft, create, idnumber = aircraft_interval(t_next_aircraft,idnumber,ATC_list,aircraft_list,runway_list,r,v_max,create,mean,std,taxiwayGraph,t,dt)
+
+        # store aircraft position before removing inactive aircraft
+        collect_data(position_array,'aircraft_position',aircraft_list,t)
 
         # remove aircraft that took off
         remove_inactive_aircraft(aircraft_list,inactive_aircraft_list)
@@ -119,9 +115,11 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
             running = False
 
         t = t + dt # update clock
+
+
     if Map == True:
         pg.quit()
 
     v_average = sum(plane_speed)/len(plane_speed)
 
-    return throughput,t_stop_total,v_average
+    return throughput,t_stop_total,v_average,position_array

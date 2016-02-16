@@ -20,13 +20,14 @@ import matplotlib.pyplot as plt
 from SIM.simulator import *
 
 '''Configuring the simulator'''
-Map = True              # Activate or deactivate the map
+Map = True# Activate or deactivate the map
 runs = 1                # number of runs 
 spawnrate = [120]       # rate [aircraft/hour] at which aircraft are added
 n_prop = [0]            # degree of propagation
 t_simulated = 3600      # simulation time [s]
 dt = 1                # timestep [s]
-runway_throughput = 60  # rate[aircraft/hour] at which aircraft can take-off/land
+runway_throughput = 120  # rate[aircraft/hour] at which aircraft can take-off/land
+min_num_trials = 1
 
 area = 30               # airspace area
 marge = 0.1             # stop criteria for accuracy purposes
@@ -47,7 +48,7 @@ for i in range(len(spawnrate)):
 
         while looping == True:
 #            simrun(t_simulated,area,dt,Map,n_prop)
-            throughput,t_stop_total,v_average = simrun(t_simulated,area,dt,Map,n_prop,runway_throughput,spawnrate[i])     
+            throughput,t_stop_total,v_average,position_array = simrun(t_simulated,area,dt,Map,n_prop,runway_throughput,spawnrate[i])
             throughput_list.append(throughput)
             t_stop_total_list.append(t_stop_total)
             v_average_list.append(v_average)
@@ -57,20 +58,27 @@ for i in range(len(spawnrate)):
             
             trial = trial + 1
             print "run",trial," finished..."
+
+            filename = 'output_' + str(spawnrate[i]) + '_' + str(trial) + '.csv'
+
+            write_data(filename,'aircraft_pos',position_array)
             
-            if trial == 1:   # this loop overwrites the next loop and is to make sure the simulator is only run once for testing purposes
-                looping = False # when this loop is removed, the simulator only stops when the stop criteria is reached or forced to stop
-            
-            if len(v_average_list)>=100: # This loop determines when the simulator should stop running. 
-                average1 = np.mean(throughput_list)
-                average2 = np.mean(t_stop_total_list)
-                average3 = np.mean(v_average_list)
-                d1 = marge * average1
-                d2 = marge * average2
-                d3 = marge * average3
-                S1 = np.std(throughput_list)
-                S2 = np.std(t_stop_total_list)
-                S3 = np.std(v_average_list)
-                if 2 *Za * S1 /np.sqrt(trial) < d1 and 2 *Za * S2 /np.sqrt(trial) < d2 and 2 *Za * S3 /np.sqrt(trial) :
-                    looping = False    
+            # if trial == 1:   # this loop overwrites the next loop and is to make sure the simulator is only run once for testing purposes
+            #     looping = False # when this loop is removed, the simulator only stops when the stop criteria is reached or forced to stop
+
+            if trial == min_num_trials:
+                looping = False
+
+            # if len(v_average_list)>=100: # This loop determines when the simulator should stop running.
+            #     average1 = np.mean(throughput_list)
+            #     average2 = np.mean(t_stop_total_list)
+            #     average3 = np.mean(v_average_list)
+            #     d1 = marge * average1
+            #     d2 = marge * average2
+            #     d3 = marge * average3
+            #     S1 = np.std(throughput_list)
+            #     S2 = np.std(t_stop_total_list)
+            #     S3 = np.std(v_average_list)
+            #     if 2 *Za * S1 /np.sqrt(trial) < d1 and 2 *Za * S2 /np.sqrt(trial) < d2 and 2 *Za * S3 /np.sqrt(trial) :
+            #         looping = False
 #        f.close()

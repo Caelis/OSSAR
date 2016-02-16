@@ -26,6 +26,8 @@ class aircraft:
         self.type = int(Type)
         self.id = Number            # identification number of the aircraft
         self.v = Speed              # current speed of the aircraft
+        self.v_max = max_speed      # maximum speed of the aircraft
+        self.v_max_turn = 10        # maximum turn speed
         self.v_target = False       # target speed due to operation
         self.heading = heading      # current heading of the aircraft
         self.heading_target = False # target heading due to commands
@@ -54,12 +56,15 @@ class aircraft:
         self.is_active = True        # To check if an aircraft is active or not.
         self.handed_off = False     # TO check if aircraft was handed off
         self.ready_for_hand_off = False     # TO check if aircraft is_ready_for_hand_off
+        self.last_distance_travelled = 0
+        self.target_speeds = []
 
 
     def update(self,separation,v_max,t,dt):
         this_t_stop = 0
         # if not self.stop:       # if the plane has a goal_atc, continue to decision making
-        self.decision_making(separation,v_max,dt)
+        # self.decision_making(separation,v_max,dt)
+        self.update_decision_making(separation)
         # else:                   # if the plane does not have a goal atc, it should stop
         # self.deceleration = self.max_deceleration
         #self.update_speed(dt)   # update plane speed
@@ -67,6 +72,88 @@ class aircraft:
         if self.v < 0.05:        # each time step calculate the total stopping time
             this_t_stop = dt
         return self.v, this_t_stop
+
+    def update_decision_making(self,separation):
+        # # 0. update s_target of exiting commands
+        # self.update_commands_distance()
+        # print self.deceleration
+
+        # 1. clear speed list
+        self.target_speeds = []
+        # print self.deceleration
+
+        # 2. Process commands
+        self.process_commands()
+        # print self.deceleration
+
+        # 3. remove obsolete commands
+        self.remove_obsolete_commands()
+        # print self.deceleration
+
+        # 4. process comamnds to target speeds
+        self.append_commands_to_target_speeds()
+        # print self.deceleration
+        # print self.target_speeds
+
+        # 5. conflicts to target speeds
+        self.conflict_avoidance(separation) # TODO conflict detection
+        # print self.deceleration
+
+        # 6. Always try to accelerate to max speed
+        self.accelerate_to_v_max()
+        # print self.deceleration
+
+        # 7. deceleration decision (based on target speeds)
+        self.deceleration_decision()
+        # print self.deceleration
+
+    def process_commands(self):
+        for command in self.op:
+            if command.status & 1 and not command.status & 2:                     # if command status = 'send'
+                command.status = command.status | 2     # make command status = 'received'
+            elif command.status & 2:
+                print 'last: ',self.last_distance_travelled
+                command.par['distance'] = command.par['distance'] - self.last_distance_travelled
+
+
+    def remove_obsolete_commands(self):
+        for command_1 in self.op:
+            for command_2 in self.op:
+                if not command_1 == command_2:
+                    if command_1.commander == command_2.commander and command_1.type == command_2.type and command_1.send_time <= command_2.send_time:
+                        self.op.remove(command_1)
+                        break
+
+    def append_commands_to_target_speeds(self):
+        for command in self.op:
+            to_append = self.process_command(command)
+            self.target_speeds.append(to_append)
+
+    def accelerate_to_v_max(self):
+        acceleration = self.v_max-self.v
+        if acceleration>self.comfort_acceleration:
+            acceleration = self.comfort_acceleration
+        self.deceleration = -acceleration
+
+    def deceleration_decision(self):
+        if self.stop:
+            self.deceleration = self.max_deceleration
+        else:
+            temp_deceleration = 0
+
+            # loop through target speeds and find highest necessary deceleration
+            for target_speed in self.target_speeds:
+                this_deceleration = 0-self.calc_acceleration(target_speed['v_target'],target_speed['s_target'])# ()(self.v-target_speed['v_target'])**2)/(2*target_speed['s_target'])
+                if this_deceleration > temp_deceleration:
+                    temp_deceleration = this_deceleration
+            print 't:',temp_deceleration
+
+            # check if the aircraft should decelerate
+            if temp_deceleration >= self.comfort_deceleration:
+                if temp_deceleration <= self.max_deceleration:
+                    self.deceleration = temp_deceleration
+                else:
+                    self.deceleration = self.max_deceleration
 
     def check_if_ac_can_stop(self,distance,type):
         if distance >= self.stopping_distance(type):
@@ -80,9 +167,23 @@ class aircraft:
         elif type == 'emergncy':
             deceleration = self.max_deceleration
         distance = ((self.v)*(self.v))/(2*deceleration)
+
         return distance
 
+    def calc_acceleration(self,v_goal,distance):
+        if not distance == 0:
+            # acceleration = (1/2*(v_delta**2)+self.v*v_delta)/distance
+            # acceleration = (1/2*(v_goal**2-2*v_goal*self.v+self.v**2)+self.v*v_delta)/distance
+            acceleration = (v_goal*v_goal-self.v*self.v)/(2*distance)
+        else:
+            acceleration = 0-self.max_deceleration
+        print 'v:',self.v,' a:',str(self.deceleration),' v_g:',v_goal,' d:',distance,' a_n:',acceleration
+
+        # TODO print 'v_g: ',v_goal,' v: ',self.v,' d: ',distance,' a:',acceleration
+        return acceleration
+
     def process_handoff(self,next_atc,x_beg,y_beg,x_des,y_des):
+        self.target_speeds = []
         self.op = []
         self.par_avoid = {}
         self.par_command = {}
@@ -95,53 +196,6 @@ class aircraft:
         self.x_des = x_des #float(wp_database[next_atc][1])
         self.y_des = y_des #float(wp_database[next_atc][2])
         self.heading = self.calculate_heading(self.x_des,self.y_des)
-
-    # decision making process to determine heading and speed
-    def decision_making(self,separation,v_max,dt):
-        self.target_speeds = []
-        if self.stop:
-            # print('AC: ' + str(self.id) + ' stopped in decision_making')
-            self.deceleration = self.max_deceleration
-        else:
-            self.deceleration = -self.comfort_acceleration        # always accelerate!
-    #        conflict = True
-            #  check for collision
-            conflict = self.conflict_avoidance(separation)         # perform a collision avoidanace check for all planes within aircraft range
-            command = self.check_newcommands(v_max,dt)    # check if new commands were given
-            # Here we have 2 boolean variables conflict and command, as well as a dictionary
-
-            needed_deceleration = -1     # assume no deceleration needed
-            for speed_command in self.target_speeds:
-                if speed_command['s_target'] == 0: #if there is target distance = 0
-                    if speed_command['v_target']-self.v == 0:
-                        commanded_deceleration = 0
-                        # print 'check'
-                    elif speed_command['v_target']-self.v > 0:
-                        commanded_deceleration = -self.comfort_acceleration #TODO acceleration is not needed when waiting in line
-                    else:
-                        commanded_deceleration = self.max_deceleration
-                else:
-                    if self.v > 0:
-                        commanded_deceleration = (self.v-speed_command['v_target'])/(speed_command['s_target']/self.v) # deceleration based on command
-                    else:
-                        commanded_deceleration = -(speed_command['v_target']/speed_command['s_target'])
-                if commanded_deceleration > needed_deceleration:
-                    needed_deceleration = commanded_deceleration
-            # print str(self.id) + ': ' + str(self.target_speeds) + ', which is a needed deceleration of: ' + str(needed_deceleration)
-            if needed_deceleration == -1:
-                self.deceleration = -self.comfort_acceleration
-            else:
-                if needed_deceleration >= self.comfort_deceleration:
-                    if needed_deceleration < self.max_deceleration:
-                        # print str(self.id) + ' must decelerate! Current speed = ' + str(self.v)
-                        self.deceleration = needed_deceleration
-                    else:
-        #                print str(self.id) + ' must decelerate at max! Current speed = ' + str(self.v)
-                        self.deceleration = self.max_deceleration
-                elif needed_deceleration == 0:
-                    self.deceleration = 0
-                else:
-                    self.deceleration = -self.comfort_acceleration
 
 
    # checks all planes the radar has detected, which type of conflict would occure when within seperation
@@ -238,36 +292,46 @@ class aircraft:
 
     #check if there are new commands given
     def check_newcommands(self,v_max,dt):
-        hasCommand = False
+        # print len(self.op)
         for command in self.op:
             if command.status == 1:                     # if command status = 'send'
                 command.status = command.status + 2     # make command status = 'received'
-                self.target_speeds.append(self.process_command(command,v_max,dt))  # process the given command
-        return hasCommand
+                to_append = self.process_command(command,v_max,dt)
+                self.target_speeds.append(to_append)  # process the given command
+
+    def cleanup_target_speeds(self):
+        current_array = []
+        for command_1 in self.target_speeds:
+            thisCommand = False
+            for command_2 in self.target_speeds:
+                pass
 
     # process given commands
-    def process_command(self, command,v_max,dt):
+    def process_command(self, command):
         if command.type == 'heading':                           # if command is a heading command
+            # print 'T d: ',command.par['distance'],' h:',command.par['turn_angle']
             distance = command.par['distance']                  # distance at which heading should be changed (given in the command)
             turn_angle = command.par['turn_angle']              # turn angle of the heading change (give in the command, can be zero)
-            return self.heading_command(distance,turn_angle,v_max,dt)  # determine operation necessary for executing the command
-        elif command.type == 'speed':                           # if command is a speed command
+            return self.heading_command(distance,turn_angle)  # determine operation necessary for executing the command
+        elif command.type == 'speed':
+            # print 'S d: ',command.par['distance'],' v:',command.par['v_target']                           # if command is a speed command
             distance = command.par['distance']                  # distance at which speed should be changed (given in the command)
             v_target = command.par['v_target']                # commanded speed (not yet implemented)
             return self.speed_command(distance,v_target)               # determine operation necessary for executing the command
 
     #determine operation for heading command
-    def heading_command(self,distance,turn_angle,v_max,dt):
+    def heading_command(self,distance,turn_angle):
         par_command = {}                                        # empty operation parameters
         if -0.03*pi < turn_angle < 0.03*pi or  1.97*pi < turn_angle < 2.03*pi or -1.97*pi > turn_angle > -2.03*pi: #if turn angle is smaller then 5 degrees
-            par_command.update({'v_target': v_max})              # operation target speed is maximum speed
+            par_command.update({'v_target': self.v_max})              # operation target speed is maximum speed
             par_command.update({'s_target': distance})                # operation should start immediately (no speed/heading changes)
         elif 0.47*pi < turn_angle < 0.53*pi or -0.47*pi > turn_angle > -0.53*pi or 1.47*pi < turn_angle < 1.53*pi or -1.47*pi > turn_angle > -1.53*pi: #if turn angle is smaller then 5 degrees
             par_command.update({'v_target': 0.5144 * int(data[self.type][2])}) # operation target speed is maximum turning speed
             par_command.update({'s_target': distance})  # operation target distance is the distance until it needs to decelerate
+            # print par_command
         else:                                                   # if the command is unclear:
             #TODO This happens with a 180 degree turn
-            par_command.update({'v_target': v_max})         # operation target speed is speed limit
+            par_command.update({'v_target': self.v_max})         # operation target speed is speed limit
             par_command.update({'s_target': 0.1})                  # operation should start immediately (no speed/heading changes)
         return par_command
 
@@ -284,8 +348,12 @@ class aircraft:
         #     # print('AC: ' + str(self.id) + ' stopped in update_speed')
         #     self.deceleration = self.max_deceleration
         new_speed = self.v - (dt*self.deceleration)
+        # print 'new_speed = ',self.v,' - (',dt,'*',self.deceleration,')'
         if new_speed > 0:
-            self.v = new_speed
+            if new_speed > self.v_max:
+                self.v = self.v_max
+            else:
+                self.v = new_speed
         else:
             self.v = 0
                 
@@ -314,3 +382,30 @@ class aircraft:
             self.update_heading()
         self.x_pos = self.x_pos + self.v * dt * cos(self.heading)
         self.y_pos = self.y_pos + self.v * dt * sin(self.heading)
+        self.last_distance_travelled = self.v * dt
+        for speed_command in self.target_speeds:
+            speed_command['s_target'] = speed_command['s_target']-self.last_distance_travelled
+
+    def update_pos_speed(self,dt):
+        # self.v = self.v - (dt*self.deceleration)
+        if self.heading == False or self.heading == None: #if no heading given, determine heading
+            self.update_heading()
+
+        # for distance calculation
+        x_pos_old = self.x_pos
+        y_pos_old = self.y_pos
+
+        # update position
+        delta_s = -0.5*self.deceleration*dt*dt+self.v*dt
+        if delta_s<0:
+            delta_s = 0
+        self.x_pos = self.x_pos + delta_s * cos(self.heading)
+        self.y_pos = self.y_pos + delta_s * sin(self.heading)
+
+        # update speed
+        delta_v = -self.deceleration*dt
+        self.v = self.v + delta_v
+        if self.v <0 :
+            self.v = 0
+        # self.last_distance_travelled = hypot(self.x_pos-x_pos_old,self.y_pos-y_pos_old)
+        self.last_distance_travelled = delta_s

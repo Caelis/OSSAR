@@ -119,6 +119,7 @@ def update_aircraft(aircraft_list,plane_speed,t_stop_total,dt,separation,v_max,r
     update_all_aircraft_radar(aircraft_list,radar_range)
     for plane in aircraft_list:      #loop through all aircraft
         this_speed, this_stop_time = plane.update(separation,v_max,t,dt)
+        # print 'new_speed = ',plane.v,' - (',dt,'*',plane.deceleration,')'
         plane_speed.append(this_speed)
         t_stop_total = t_stop_total + this_stop_time
     return t_stop_total, plane_speed
@@ -128,8 +129,9 @@ def update_all_aircraft_position(aircraft_list,dt):
         # if thisAircraft.stop & 8:
         #     # print str(thisAircraft.id) + ' is stopped with: ' + str(thisAircraft.stop)
         #     print str(thisAircraft.id) + ' from: ' + str(thisAircraft.atc[0]) + ' to: ' + str(thisAircraft.atc_goal)
-        thisAircraft.update_pos(dt)
-        thisAircraft.update_speed(dt)
+        # thisAircraft.update_speed(dt)
+        # thisAircraft.update_pos(dt)
+        thisAircraft.update_pos_speed(dt)
 
 def update_all_aircraft_radar(plane_list,radar_range):
     for plane1 in plane_list:       # loop through all planes in the simulator

@@ -322,7 +322,7 @@ class ATC:
     def set_operation_parameters(self,plane,next_atc,turn_angle,t):
         par = {}
         command_type = 'heading'
-        distance = hypot(plane.x_pos-self.x_handoff, plane.y_pos-self.y_handoff) #calculate at which distance the operation should be finished
+        distance = plane.distance_to_atc #hypot(plane.x_pos-self.x_handoff, plane.y_pos-self.y_handoff) #calculate at which distance the operation should be finished
         # parameters of command
         par['next_atc'] = next_atc
         par['turn_angle'] = turn_angle
