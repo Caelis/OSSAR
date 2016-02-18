@@ -51,7 +51,7 @@ def initiate_dijkstra(v_max):
     return dijk
 
 
-def  update_dijsktra(ATC_list, graph, seperation, v_max):  # this function updates the graph values for the  current situation
+def update_dijsktra(ATC_list, graph, seperation, v_max):  # this function updates the graph values for the  current situation
     for key, value in graph.adjacency_iter():
         for inner_key, inner_value in value.items():
             # Get the current density and distance of each link(key, inner_key)
@@ -62,11 +62,13 @@ def  update_dijsktra(ATC_list, graph, seperation, v_max):  # this function updat
             # Calculate the speeds based on density
             if density > max_density:
                 speed = 0
-            elif density < 0.5 * max_density:  # TODO make the the 0.5 a variable that is set up in the simulator setup
+            elif density < 0 * max_density: # 0.5 * max_density:  # TODO make the the 0.5 a variable that is set up in the simulator setup
                 speed = v_max
             else:
-                if density >= 0:
-                    speed = v_max * (1 - (density / max_density))
+                if density > 0:
+                    speed = 0.00001#v_max * (1 - (density / max_density))
+                else:
+                    speed = v_max
 
             # Calculate the graph value based on the speed and distance
             if speed > 0:
