@@ -20,14 +20,15 @@ import matplotlib.pyplot as plt
 from SIM.simulator import *
 
 '''Configuring the simulator'''
-Map = True# Activate or deactivate the map
+Map = False# Activate or deactivate the map
 runs = 1                # number of runs 
-spawnrate = [120]       # rate [aircraft/hour] at which aircraft are added
+spawnrate = [1,20,40,60,80,100,120,140,160,180,200,220,240]       # rate [aircraft/hour] at which aircraft are added
+# spawnrate = [1]       # rate [aircraft/hour] at which aircraft are added
 n_prop = [0]            # degree of propagation
 t_simulated = 3600      # simulation time [s]
-dt = 1                # timestep [s]
-runway_throughput = 120  # rate[aircraft/hour] at which aircraft can take-off/land
-min_num_trials = 1
+dt = 0.5                # timestep [s]
+runway_throughput = 120 # rate[aircraft/hour] at which aircraft can take-off/land
+min_num_trials = 100    # minimum number of trial runs
 
 area = 30               # airspace area
 marge = 0.1             # stop criteria for accuracy purposes
@@ -48,7 +49,7 @@ for i in range(len(spawnrate)):
 
         while looping == True:
 #            simrun(t_simulated,area,dt,Map,n_prop)
-            throughput,t_stop_total,v_average,position_array = simrun(t_simulated,area,dt,Map,n_prop,runway_throughput,spawnrate[i])
+            throughput,t_stop_total,v_average,position_array,edge_array = simrun(t_simulated,area,dt,Map,n_prop,runway_throughput,spawnrate[i])
             throughput_list.append(throughput)
             t_stop_total_list.append(t_stop_total)
             v_average_list.append(v_average)
@@ -59,10 +60,13 @@ for i in range(len(spawnrate)):
             trial = trial + 1
             print "run",trial," finished..."
 
-            filename = 'output_' + str(spawnrate[i]) + '_' + str(trial) + '.csv'
+            filename_aircraft_pos = 'aircraftPos_' + str(spawnrate[i]) + '_' + str(trial) + '.csv'
+            filename_edge_value = 'edgeValue_' + str(spawnrate[i]) + '_' + str(trial) + '.csv'
 
-            write_data(filename,'aircraft_pos',position_array)
-            
+
+            write_data(filename_aircraft_pos,position_array)
+            write_data(filename_edge_value,edge_array)
+
             # if trial == 1:   # this loop overwrites the next loop and is to make sure the simulator is only run once for testing purposes
             #     looping = False # when this loop is removed, the simulator only stops when the stop criteria is reached or forced to stop
 

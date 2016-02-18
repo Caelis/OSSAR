@@ -70,8 +70,7 @@ def  update_dijsktra(ATC_list, graph, seperation, v_max):  # this function updat
 
             # Calculate the graph value based on the speed and distance
             if speed > 0:
-                graph[key][inner_key][
-                    'weight'] = distance / speed  # TODO this is NOT our optimal soultion!  BALANCING DILEMMA
+                graph[key][inner_key]['weight'] = distance / speed  # TODO this is NOT our optimal soultion!  BALANCING DILEMMA
             else:
                 graph[key][inner_key]['weight'] = float('Inf')
     return graph

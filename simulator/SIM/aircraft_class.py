@@ -112,7 +112,6 @@ class aircraft:
             if command.status & 1 and not command.status & 2:                     # if command status = 'send'
                 command.status = command.status | 2     # make command status = 'received'
             elif command.status & 2:
-                print 'last: ',self.last_distance_travelled
                 command.par['distance'] = command.par['distance'] - self.last_distance_travelled
 
 
@@ -146,8 +145,6 @@ class aircraft:
                 this_deceleration = 0-self.calc_acceleration(target_speed['v_target'],target_speed['s_target'])# ()(self.v-target_speed['v_target'])**2)/(2*target_speed['s_target'])
                 if this_deceleration > temp_deceleration:
                     temp_deceleration = this_deceleration
-            print 't:',temp_deceleration
-
             # check if the aircraft should decelerate
             if temp_deceleration >= self.comfort_deceleration:
                 if temp_deceleration <= self.max_deceleration:
@@ -177,8 +174,6 @@ class aircraft:
             acceleration = (v_goal*v_goal-self.v*self.v)/(2*distance)
         else:
             acceleration = 0-self.max_deceleration
-        print 'v:',self.v,' a:',str(self.deceleration),' v_g:',v_goal,' d:',distance,' a_n:',acceleration
-
         # TODO print 'v_g: ',v_goal,' v: ',self.v,' d: ',distance,' a:',acceleration
         return acceleration
 
