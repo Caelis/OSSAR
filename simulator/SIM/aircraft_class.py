@@ -108,11 +108,15 @@ class aircraft:
         # print self.deceleration
 
     def process_commands(self):
-        for command in self.op:
-            if command.status & 1 and not command.status & 2:                     # if command status = 'send'
-                command.status = command.status | 2     # make command status = 'received'
-            elif command.status & 2:
-                command.par['distance'] = command.par['distance'] - self.last_distance_travelled
+        if len(self.op)>0:
+            self.stop = self.stop ^ (self.stop & 64)
+            for command in self.op:
+                if command.status & 1 and not command.status & 2:                     # if command status = 'send'
+                    command.status = command.status | 2     # make command status = 'received'
+                elif command.status & 2:
+                    command.par['distance'] = command.par['distance'] - self.last_distance_travelled
+        else:
+            self.stop = self.stop | 64
 
 
     def remove_obsolete_commands(self):
