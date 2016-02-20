@@ -27,7 +27,7 @@ def map_initialization(wp_database):
     scr = pg.display.set_mode(reso)
     scrrect = scr.get_rect()
     scr.fill((2,255,70))
-    plane_pic= pg.image.load("blue-plane-hi.png")
+    plane_pic= pg.image.load("blue-plane-hi.bmp")
     # set waypoints
     X_waypoint = []
     Y_waypoint = []

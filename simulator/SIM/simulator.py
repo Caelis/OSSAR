@@ -71,8 +71,9 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
 
     # perpare for export
     position_array = []
+    edges_array = []
     while running == True:
-        print 'Time is: ' + str(t)
+        # print 'Time is: ' + str(t)
         # time.sleep(5)
         # taxiwayGraph = nx.DiGraph(taxiwayGraph0)
 
@@ -102,6 +103,8 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
 
         # store aircraft position before removing inactive aircraft
         collect_data(position_array,'aircraft_position',aircraft_list,t)
+        collect_data(edges_array,'edge_values',taxiwayGraph,t)
+
 
         # remove aircraft that took off
         remove_inactive_aircraft(aircraft_list,inactive_aircraft_list)
@@ -122,4 +125,4 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
 
     v_average = sum(plane_speed)/len(plane_speed)
 
-    return throughput,t_stop_total,v_average,position_array
+    return throughput,t_stop_total,v_average,position_array,edges_array
