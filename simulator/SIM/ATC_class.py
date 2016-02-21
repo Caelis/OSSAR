@@ -93,7 +93,7 @@ class ATC:
                 for link_id in closest_incoming:
                     aircraft = closest_incoming[link_id]
                     # print aircraft
-                    aircraft.stop = 256
+                    aircraft.stop = aircraft.stop | 256
                     self.remove_plane(aircraft)
                     self.decrease_graph_density(graph, aircraft.atc[0], self.id)
                     aircraft.is_active = False
