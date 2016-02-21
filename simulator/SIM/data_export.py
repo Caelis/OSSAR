@@ -26,3 +26,13 @@ def write_data(filename,export_array):
     with open(filename, "wb") as f:
         writer = csv.writer(f)
         writer.writerows(export_array)
+
+def compile_averages_data(averages_data,stop_type_list):
+    return_array = []
+    for index in range(0,len(averages_data['speed'])):
+        thisRow = []
+        thisRow.append(averages_data['speed'][index])
+        for stop_type in stop_type_list:
+            thisRow.append(averages_data['stop_types'][index][str(stop_type)])
+        return_array.append(thisRow)
+    return return_array
