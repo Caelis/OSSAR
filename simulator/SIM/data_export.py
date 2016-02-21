@@ -1,9 +1,9 @@
 '''
-Package: main
-Module: fleet
-module dependence: aircraft_class, flightplan_class
+Package:
+Module:
+module dependence:
 
-description: The fleet package manages the aircraft
+description:
 
 Input:
 Output:
