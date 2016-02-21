@@ -41,6 +41,7 @@ class ATC:
         self.throughput = False         # thoughput of ATC
         self.par = []
         self.runway = False             # for a runway ATC the runway that it has associated
+        self.num_links = len(self.link)
 
     # def update_aircraft_distance(self):
     #     for thisPlane in self.locp:
@@ -51,6 +52,8 @@ class ATC:
     def update(self,ATC_list,runway_list,v_max,graph,runway_occupance_time,dt,t):
         ### radar (distance of aircraft from ATC)
         self.update_radar()
+
+        self.check_and_remove_impossible_conflict(graph)
 
         ### handoff decision && ### graph update
         self.handoff_decisions(ATC_list,graph,runway_list,runway_occupance_time)
@@ -74,6 +77,26 @@ class ATC:
         if yAcRot > yAtcRot:
             aircraft.distance_to_atc = -aircraft.distance_to_atc
             # print('The distance is ' + str(aircraft.distance_to_atc) + '. We passed the ATC')
+
+    def check_and_remove_impossible_conflict(self, graph):
+        if self.type == 2:
+            # with this function we check if there are unsolvable conflcits and reomove all aircraft that are part of the conflict.
+            closest_incoming = {}
+            # make a dictionary of the closest aircraft
+            for aircraft in self.locp:
+                if closest_incoming.has_key(aircraft.atc[0]):
+                    if closest_incoming[aircraft.atc[0]].distance_to_atc > aircraft.distance_to_atc:
+                        closest_incoming[aircraft.atc[0]] = aircraft
+                else:
+                    closest_incoming[aircraft.atc[0]] = aircraft
+            if len(closest_incoming) == self.num_links:
+                for link_id in closest_incoming:
+                    aircraft = closest_incoming[link_id]
+                    # print aircraft
+                    aircraft.stop = 256
+                    self.remove_plane(aircraft)
+                    self.decrease_graph_density(graph, aircraft.atc[0], self.id)
+                    aircraft.is_active = False
 
 ##############################
 ## pre Hand-off

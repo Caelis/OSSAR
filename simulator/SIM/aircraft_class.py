@@ -58,7 +58,7 @@ class aircraft:
         self.ready_for_hand_off = False     # TO check if aircraft is_ready_for_hand_off
         self.last_distance_travelled = 0
         self.target_speeds = []
-
+        self.was_just_handed_off = False
 
     def update(self,separation,v_max,t,dt):
         this_t_stop = 0
@@ -116,7 +116,10 @@ class aircraft:
                 elif command.status & 2:
                     command.par['distance'] = command.par['distance'] - self.last_distance_travelled
         else:
-            self.stop = self.stop | 64
+            if self.was_just_handed_off:
+                self.was_just_handed_off = False
+            else:
+                self.stop = self.stop | 64
 
 
     def remove_obsolete_commands(self):
@@ -195,6 +198,7 @@ class aircraft:
         self.x_des = x_des #float(wp_database[next_atc][1])
         self.y_des = y_des #float(wp_database[next_atc][2])
         self.heading = self.calculate_heading(self.x_des,self.y_des)
+        self.was_just_handed_off =True
 
 
    # checks all planes the radar has detected, which type of conflict would occure when within seperation
