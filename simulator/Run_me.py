@@ -23,13 +23,13 @@ from SIM.simulator_stop_criteria import *
 '''Configuring the simulator'''
 Map = False# Activate or deactivate the map
 runs = 1                # number of runs 
-# spawnrate = [1,20,40,60,80,100,120,140,160,180,200,220,240]       # rate [aircraft/hour] at which aircraft are added
-spawnrate = [60]       # rate [aircraft/hour] at which aircraft are added
+spawnrate = [1,20,40,60,80,100,120,140,160,180,200,220,240]       # rate [aircraft/hour] at which aircraft are added
+# spawnrate = 60       # rate [aircraft/hour] at which aircraft are added
 n_prop = [0]            # degree of propagation
-t_simulated = 600      # simulation time [s]
+t_simulated = 3600      # simulation time [s]
 dt = 0.5                # timestep [s]
 runway_throughput = 120 # rate[aircraft/hour] at which aircraft can take-off/land
-min_num_trials = 20    # minimum number of trial runs
+min_num_trials = 30    # minimum number of trial runs
 
 
 area = 30               # airspace area
@@ -67,11 +67,11 @@ for i in range(len(spawnrate)):
             trial = trial + 1
             print "run",trial," finished..."
 
-            filename_aircraft_pos = 'aircraftPos_' + str(spawnrate[i]) + '_' + str(trial) + '.csv'
-            filename_edge_value = 'edgeValue_' + str(spawnrate[i]) + '_' + str(trial) + '.csv'
+            # filename_aircraft_pos = 'aircraftPos_' + str(spawnrate[i]) + '_' + str(trial) + '.csv'
+            # filename_edge_value = 'edgeValue_' + str(spawnrate[i]) + '_' + str(trial) + '.csv'
 
-            write_data(filename_aircraft_pos,position_array)
-            write_data(filename_edge_value,edge_array)
+            # write_data(filename_aircraft_pos,position_array)
+            # write_data(filename_edge_value,edge_array)
 
             # if trial == min_num_trials:
             #     looping = False

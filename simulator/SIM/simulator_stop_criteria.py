@@ -11,14 +11,14 @@ Output:
 
 import numpy as np
 
-def simulator_stop_criteria(position_array,v_average_list,stop_type_list,trial,marge,Za):
+def simulator_stop_criteria(position_array,v_average_list,stop_type_list,trial,min_num_runs,marge,Za):
     stop_criteria = []
     looping = True
     
     v_average_list = append_v_average_list(position_array,v_average_list)
     stop_type_list = append_stop_type_list(stop_type_list,position_array,stop_criteria,trial,marge,Za)
 
-    if len(v_average_list) >= 30: # This loop determines when the simulator should stop running.
+    if len(v_average_list) >= min_num_runs: # This loop determines when the simulator should stop running.
         stop_criteria = check_average_speed(v_average_list,stop_criteria,trial,marge,Za) #determine if avarge speeds are reliable
         stop_criteria = check_plane_stop(stop_type_list,stop_criteria,trial,marge,Za)
         
@@ -41,7 +41,7 @@ def append_v_average_list(position_array,v_average_list):
 #appends the amount of stops per stop type for one simulation to stop_type_list
 def append_stop_type_list(stop_type_list,position_array,stop_criteria,trial,marge,Za):
     stop_types = {} #stop types for a single simulation
-    existing_stop_types = [1,2,4,8,16,32,64,128,256]
+    existing_stop_types = [1,2,4,8,16,32,64,128,256,512]
     for option in existing_stop_types:
         stop_types[str(option)] = 0
     for x in xrange(len(position_array)):
