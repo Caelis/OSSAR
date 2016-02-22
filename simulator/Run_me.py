@@ -36,11 +36,11 @@ area = 30               # airspace area
 marge = 0.1             # stop criteria for accuracy purposes
 Za = 1.96               # stop criteria for accuracy purposes
 
-throughput_list = []    # measurements
-t_stop_total_list = []  # measurements
-v_average_list = []     # measurements
-stop_type_list = []     # measurements
-#t = []          # measurements
+# throughput_list = []    # measurements
+# t_stop_total_list = []  # measurements
+# v_average_list = []     # measurements
+# stop_type_list = []     # measurements
+# #t = []          # measurements
 
 # what files to save
 save_parameters = {}
@@ -49,6 +49,10 @@ save_parameters['position'] = True
 save_parameters['edges'] = True
 
 for i in range(len(spawnrate)):
+    throughput_list = []    # measurements
+    t_stop_total_list = []  # measurements
+    v_average_list = []     # measurements
+    stop_type_list = []     # measurements
     for j in range(len(n_prop)):
         n_runs = []
         

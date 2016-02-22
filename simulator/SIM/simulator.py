@@ -11,14 +11,14 @@ Input: Fleet package, ATC_class package, Map package
 from Fleet import *
 from ATC_class import ATC
 from ATC_class import create_ATC
-from Map import *
+# from Map import *
 from dijkstra_structure import *
 from runway_class import *
 
 #import python modules
 from numpy import *
 from math import *
-import pygame as pg
+# import pygame as pg
 import networkx as nx
 
 #import data
