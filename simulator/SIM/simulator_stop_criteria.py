@@ -54,8 +54,11 @@ def append_stop_type_list(stop_type_list,position_array,stop_criteria,trial,marg
 def check_average_speed(v_average_list,stop_criteria,trial,marge,Za):
     mean_v_average = np.mean(v_average_list)
     std_v_average = np.std(v_average_list)
-    # d_v_avg = marge * mean_v_average
-    if 2 *Za * std_v_average / np.sqrt(trial) < marge:
+    if mean_v_average>1:
+        d_v_avg = marge * mean_v_average
+    else:
+        d_v_avg = marge
+    if 2 *Za * std_v_average / np.sqrt(trial) < d_v_avg:
         v_avg_stop = True
     else:
         v_avg_stop = False
@@ -84,9 +87,12 @@ def check_plane_stop(stop_type_list,stop_criteria,trial,marge,Za):
         maximum = max(thisKeyValues)
         # std = np.sqrt(sum(abs(mean - np.array([option2[key] for option2 in stop_type_list]))) / length)
         std_sample = np.std(thisKeyValues)
-        # d = marge
+        if mean_sample > 1:
+            d = marge * mean_sample
+        else:
+            d = marge
         # if maximum != 0:
-        if 2 *Za * std_sample / np.sqrt(trial) < marge:
+        if 2 *Za * std_sample / np.sqrt(trial) < d:
             key_stop = True
         else:
             key_stop = False
