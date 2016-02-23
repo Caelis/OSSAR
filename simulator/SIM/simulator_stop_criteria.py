@@ -41,7 +41,7 @@ def append_v_average_list(position_array,v_average_list):
 #appends the amount of stops per stop type for one simulation to stop_type_list
 def append_stop_type_list(stop_type_list,position_array,stop_criteria,trial,marge,Za):
     stop_types = {} #stop types for a single simulation
-    existing_stop_types = [1,2,4,8,16,32,64,128,256,512]
+    existing_stop_types = [1,2,4,8,16,32,64,128,256]
     for option in existing_stop_types:
         stop_types[str(option)] = 0
     for x in xrange(len(position_array)):
@@ -54,8 +54,8 @@ def append_stop_type_list(stop_type_list,position_array,stop_criteria,trial,marg
 def check_average_speed(v_average_list,stop_criteria,trial,marge,Za):
     mean_v_average = np.mean(v_average_list)
     std_v_average = np.std(v_average_list)
-    d_v_avg = marge * mean_v_average
-    if 2 *Za * std_v_average / np.sqrt(trial) < d_v_avg:
+    # d_v_avg = marge * mean_v_average
+    if 2 *Za * std_v_average / np.sqrt(trial) < marge:
         v_avg_stop = True
     else:
         v_avg_stop = False
@@ -72,19 +72,25 @@ def stop_types_loop(stop_type,stop_types,existing_stop_types):
 #checks if each stop type is within the confidence interval
 def check_plane_stop(stop_type_list,stop_criteria,trial,marge,Za):
     for key in stop_type_list[0]:
+        thisKeyValues = []
+        for option in stop_type_list:
+            thisKeyValues.append(option[key])
+
         length = len(stop_type_list)
 #        key_list = (option2[key] for option2 in stop_type_list)
 #        print key_list
-        mean = sum(option1[key] for option1 in stop_type_list) / length
-        maximum = max([x[key] for x in stop_type_list])
-        std = np.sqrt(sum(abs(mean - np.array([option2[key] for option2 in stop_type_list]))) / length)
-        d = marge * mean
-        if maximum != 0:
-            if 2 *Za * std / np.sqrt(trial) < d:
-                key_stop = True
-            else:
-                key_stop = False
-        else:
+        mean_sample = np.mean(thisKeyValues)
+        # mean = sum(option1[key] for option1 in stop_type_list) / length
+        maximum = max(thisKeyValues)
+        # std = np.sqrt(sum(abs(mean - np.array([option2[key] for option2 in stop_type_list]))) / length)
+        std_sample = np.std(thisKeyValues)
+        # d = marge
+        # if maximum != 0:
+        if 2 *Za * std_sample / np.sqrt(trial) < marge:
             key_stop = True
+        else:
+            key_stop = False
+        # else:
+        #     key_stop = True
         stop_criteria.append(key_stop)
     return stop_criteria        
