@@ -24,11 +24,8 @@ from SIM.simulator_stop_criteria import *
 Map = False# Activate or deactivate the map
 runs = 1                # number of runs 
 # spawnrate = [1,20,40,60,80,100,120,140,160,180,200,220,240]       # rate [aircraft/hour] at which aircraft are added
-# spawnrate = [200]       # rate [aircraft/hour] at which aircraft are added
-# spawnrate = [160,220]
-spawnrate = [240]
-# spawnrate =[1]
-
+# spawnrate = [110,114,118,124,128]
+spawnrate = [112,116,122,126,130]
 n_prop = [0]            # degree of propagation
 t_simulated = 3600      # simulation time [s]
 dt = 0.5                # timestep [s]
@@ -109,5 +106,5 @@ for i in range(len(spawnrate)):
             averages_data = {}
             averages_data['speed'] = v_average_list
             averages_data['stop_types'] = stop_type_list
-            averages_array = compile_averages_data(averages_data,[1,2,4,8,16,32,64,128,256])
+            averages_array = compile_averages_data(averages_data,[1,2,4,8,16,32,64,128,256,512])
             write_data(filename_averages,averages_array)

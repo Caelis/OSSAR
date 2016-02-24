@@ -98,7 +98,7 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
         ### heading decision
 
         # add aircraft
-        t_next_aircraft, create, idnumber = aircraft_interval(t_next_aircraft,idnumber,ATC_list,aircraft_list,runway_list,r,v_max,create,mean,std,taxiwayGraph,t,dt)
+        t_next_aircraft, create, idnumber = aircraft_interval(t_next_aircraft,idnumber,ATC_list,aircraft_list,runway_list,r,v_max,create,mean,std,taxiwayGraph,separation,t,dt)
 
         # # add aircraft
         # t_next_aircraft, create, idnumber = aircraft_interval(t_next_aircraft,idnumber,ATC_list,aircraft_list,runway_list,r,v_max,create,mean,std,taxiwayGraph,t,dt)

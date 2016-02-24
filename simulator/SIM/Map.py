@@ -27,7 +27,7 @@ def map_initialization(wp_database):
     scr = pg.display.set_mode(reso)
     scrrect = scr.get_rect()
     scr.fill((2,255,70))
-    plane_pic= pg.image.load("blue-plane-hi.bmp")
+    plane_pic= pg.image.load("blue-plane-hi.png")
     # set waypoints
     X_waypoint = []
     Y_waypoint = []
@@ -95,8 +95,8 @@ def map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X
             
             #diplay aircraft id
             if disp_aircaft_id:
-                # id_string = 'ID: ' + str(plane.id)
-                id_string = 'V: ' + str(round(plane.v/0.5144,1)) + ' A: ' + str(round(plane.deceleration,1))
+                id_string = 'ID: ' + str(plane.id)
+                id_string = id_string + ' V: ' + str(round(plane.v/0.5144,1)) + ' A: ' + str(round(plane.deceleration,1))
                 # id_string = str(round(plane.v,1))
                 # id_string = 'C: ' + str(plane.conflict)
                 # id_string = 'R: ' + str(len(plane.radar))

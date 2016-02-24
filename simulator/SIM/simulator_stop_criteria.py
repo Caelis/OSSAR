@@ -39,7 +39,7 @@ def append_v_average_list(position_array,v_average_list):
 #appends the amount of stops per stop type for one simulation to stop_type_list
 def append_stop_type_list(stop_type_list,position_array,stop_criteria,trial,marge,Za):
     stop_types = {} #stop types for a single simulation
-    existing_stop_types = [1,2,4,8,16,32,64,128,256]
+    existing_stop_types = [1,2,4,8,16,32,64,128,256,512]
     for option in existing_stop_types:
         stop_types[str(option)] = 0
     for x in xrange(len(position_array)):
