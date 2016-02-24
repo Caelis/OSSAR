@@ -2,26 +2,24 @@
 Package:
 Module:
 module dependence:
-
 description:
-
 Input:
 Output:
 '''
 
 import numpy as np
 
-def simulator_stop_criteria(position_array,v_average_list,stop_type_list,trial,marge,Za):
+def simulator_stop_criteria(position_array,v_average_list,stop_type_list,trial,min_num_trials,marge,Za):
     stop_criteria = []
     looping = True
-    
+
     v_average_list = append_v_average_list(position_array,v_average_list)
     stop_type_list = append_stop_type_list(stop_type_list,position_array,stop_criteria,trial,marge,Za)
 
-    if len(v_average_list) >= 30: # This loop determines when the simulator should stop running.
+    if len(v_average_list) >= min_num_trials: # This loop determines when the simulator should stop running.
         stop_criteria = check_average_speed(v_average_list,stop_criteria,trial,marge,Za) #determine if avarge speeds are reliable
         stop_criteria = check_plane_stop(stop_type_list,stop_criteria,trial,marge,Za)
-        
+
     #check if all stop criteria are true, if yes stop simulator, else continue
     print stop_criteria
     for criterion in stop_criteria:
@@ -54,12 +52,19 @@ def append_stop_type_list(stop_type_list,position_array,stop_criteria,trial,marg
 def check_average_speed(v_average_list,stop_criteria,trial,marge,Za):
     mean_v_average = np.mean(v_average_list)
     std_v_average = np.std(v_average_list)
-    d_v_avg = marge * mean_v_average
+
+    ### HEIKO
+    if abs(mean_v_average) < 1:
+        d_v_avg = marge
+    else:
+        d_v_avg = marge*mean_v_average
+    ###
+    # d_v_avg = marge * mean_v_average
     if 2 *Za * std_v_average / np.sqrt(trial) < d_v_avg:
         v_avg_stop = True
     else:
         v_avg_stop = False
-    stop_criteria.append(v_avg_stop) 
+    stop_criteria.append(v_avg_stop)
     return stop_criteria
 
 #loops through all existing stop types to see if there are one or more active in each datapoint
@@ -78,7 +83,14 @@ def check_plane_stop(stop_type_list,stop_criteria,trial,marge,Za):
         mean = sum(option1[key] for option1 in stop_type_list) / length
         maximum = max([x[key] for x in stop_type_list])
         std = np.sqrt(sum(abs(mean - np.array([option2[key] for option2 in stop_type_list]))) / length)
-        d = marge * mean
+
+        ### HEIKO
+        if abs(mean) < 1:
+            d = marge
+        else:
+            d = marge * mean
+        ###
+        # d = marge * mean
         if maximum != 0:
             if 2 *Za * std / np.sqrt(trial) < d:
                 key_stop = True
@@ -87,4 +99,4 @@ def check_plane_stop(stop_type_list,stop_criteria,trial,marge,Za):
         else:
             key_stop = True
         stop_criteria.append(key_stop)
-    return stop_criteria        
+    return stop_criteria

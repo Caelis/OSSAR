@@ -35,6 +35,15 @@ def aircraft_interval(t_next_aircraft,idnumber,ATC_list,aircraft_list,runway_lis
             create = True
     return t_next_aircraft,create,idnumber
 
+def add_random_aircraft_at_rate(rate,idnumber,ATC_list,aircraft_list,runway_list,r,v_max,graph,t,dt):
+    randNumber = random.random()
+    if randNumber <= rate/float(60)/float(60)*dt:
+        idnumber = create_aircraft(idnumber,ATC_list,aircraft_list,runway_list,r,v_max,graph,t,dt)
+        return idnumber
+    else:
+        return False
+
+
 def create_aircraft(idnumber,ATC_list,aircraft_list,runway_list,r,v_max,graph,t,dt): #creates aircraft when nessecary
     # select origin and destination
     ATC_gate = int(rnd.choice(g_database))              # Random select a departure gate of the aircraft
@@ -52,7 +61,7 @@ def create_aircraft(idnumber,ATC_list,aircraft_list,runway_list,r,v_max,graph,t,
     max_dcc = int(data[int(plane_type)][3])             # set maximum deccelration
 
     # initialize speed and heading
-    speed = 30*0.5144                                   # choose starting speed
+    speed = v_max                                   # choose starting speed
     max_speed = v_max                                   # starting value for the maximum speed
     heading = 1.5                                     # Set an initial value for the heading
 
@@ -62,27 +71,15 @@ def create_aircraft(idnumber,ATC_list,aircraft_list,runway_list,r,v_max,graph,t,
 
     # add plane to the responsible ATC
     ATC_list[ATC_gate].add_plane(new_plane)
-    ATC_list[ATC_gate].plan_operation(new_plane,graph,t)
-
-    # have the first gate plan the operation
-    # success, path = ATC_list[ATC_gate].get_path(graph,ATC_gate,ATC_runway)
-    # if success:
-    #     next_atc = path[1]
-    #     # ATC_list[next_atc].add_plane(new_plane)
-    #     new_plane.process_handoff(next_atc,float(wp_database[ATC_gate][1]),float(wp_database[ATC_gate][2]),float(wp_database[next_atc][1]),float(wp_database[next_atc][2]))
-    #     new_plane.update_heading()
+    # # only plan operation to next atc, as there is only one path from the gate
+    # new_plane.atc_goal = ATC_list[ATC_gate].link[0][1]
     #
-    #     # ## OR
-    #     # next_atc = path[1]
-    #     # par = {}
-    #     # par['next_atc'] = next_atc
-    #     # plane_command = command('heading', ATC_gate, new_plane.id, t, 1, par) #1 = send
-    #     # new_plane.op.append(plane_command)
-    #     # # new_plane.atc = [ATC_gate, next_atc]
-    #     # new_plane.op[0].par['next_atc'] = next_atc
-    #     # # ATC_list[next_atc].add_plane(new_plane)
-    #     # # new_plane.process_handoff(next_atc,float(wp_database[ATC_gate][1]),float(wp_database[ATC_gate][2]),float(wp_database[next_atc][1]),float(wp_database[next_atc][2]))
-    #     # new_plane.update_heading()
+    # ATC_list[ATC_gate].plan_operation(new_plane,graph,t)
+    #
+    # new_plane.atc_goal = ATC_runway
+    # new_plane.heading = new_plane.heading+new_plane.op[0].par['turn_angle']
+    # new_plane.atc = [ATC_gate,new_plane.op[0].par['next_atc']]
+
     idnumber =  idnumber + 1
     return idnumber
 
