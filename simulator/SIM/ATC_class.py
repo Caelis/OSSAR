@@ -129,7 +129,7 @@ class ATC:
                 # print 'Pre Handoff successfull Plane ' + str(plane.id) + ' ATC: ' + str(self.id)
             else:
                 plane.stop = plane.stop | 2
-                print 'Emergency stop Plane ' + str(plane.id) + ' ATC: ' + str(self.id) + ' code: ' + str(plane.stop) + ' to: ' + str(plane.atc_goal)
+                # print 'Emergency stop Plane ' + str(plane.id) + ' ATC: ' + str(self.id) + ' code: ' + str(plane.stop) + ' to: ' + str(plane.atc_goal)
 
         else:
             plane.stop = plane.stop | 2
@@ -162,7 +162,7 @@ class ATC:
     def handoff_decisions(self,ATC_list,graph,runway_list,runway_occupance_time):
         for aircraft in self.locp:
             # Pre-handoff decision
-            if ((not aircraft.check_if_ac_can_stop(aircraft.distance_to_atc,'comfort')) or aircraft.stop & 16) and not aircraft.ready_for_hand_off:
+            if ((not aircraft.check_if_ac_can_stop(aircraft.distance_to_atc,'comfort')) or aircraft.stop & 16 or aircraft.stop & 2) and not aircraft.ready_for_hand_off:
                 self.pre_handoff_type_select(aircraft,graph)
             # Handoff decision
             if aircraft.distance_to_atc <= 0 and not aircraft.handed_off and aircraft.ready_for_hand_off:

@@ -39,7 +39,7 @@ class aircraft:
         self.x_pos = X1             # current x_coordinate
         self.y_pos = Y1             # current y_coordinate
         self.x_des = X2             # current link end x_coordinate
-        self.y_des = Y2             # current link end y_coordinate 
+        self.y_des = Y2             # current link end y_coordinate
         self.atc = [False, ATC_id]  # plane goes from self.atc[0] to self.atc[1]
         self.atc_goal = ATC_runway  # runway goal
         self.op = []                # current operation
@@ -51,7 +51,7 @@ class aircraft:
         self.comfort_acceleration = 0.8
         self.deceleration = 0
         self.conflict = ''
-        self.stop = 32           #Becomes True if the aircraft has no goal -> aircraft stops
+        self.stop = 0           #Becomes True if the aircraft has no goal -> aircraft stops
         self.distance_to_atc = 0    #Distance to the current assigned ATC
         self.is_active = True        # To check if an aircraft is active or not.
         self.handed_off = False     # TO check if aircraft was handed off
