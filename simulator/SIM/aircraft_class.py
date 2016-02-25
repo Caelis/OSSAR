@@ -59,6 +59,7 @@ class aircraft:
         self.last_distance_travelled = 0
         self.target_speeds = []
         self.was_just_handed_off = False
+        self.route = []
 
     def update(self,separation,v_max,t,dt):
         this_t_stop = 0
@@ -109,8 +110,10 @@ class aircraft:
 
     def process_commands(self):
         if len(self.op)>0:
+            # print self.op.par
             self.stop = self.stop ^ (self.stop & 64)
             for command in self.op:
+                # print command.par
                 if command.status & 1 and not command.status & 2:                     # if command status = 'send'
                     command.status = command.status | 2     # make command status = 'received'
                 elif command.status & 2:
@@ -133,7 +136,10 @@ class aircraft:
     def append_commands_to_target_speeds(self):
         for command in self.op:
             to_append = self.process_command(command)
-            self.target_speeds.append(to_append)
+            if to_append:
+                self.target_speeds.append(to_append)
+            else:
+                self.op.remove(command)
 
     def accelerate_to_v_max(self):
         acceleration = self.v_max-self.v
@@ -293,14 +299,14 @@ class aircraft:
             self.target_speeds.append({'v_target': v_target, 's_target': s_target})
         return conflict
 
-    #check if there are new commands given
-    def check_newcommands(self,v_max,dt):
-        # print len(self.op)
-        for command in self.op:
-            if command.status == 1:                     # if command status = 'send'
-                command.status = command.status + 2     # make command status = 'received'
-                to_append = self.process_command(command,v_max,dt)
-                self.target_speeds.append(to_append)  # process the given command
+    # #check if there are new commands given
+    # def check_newcommands(self,v_max,dt):
+    #     # print len(self.op)
+    #     for command in self.op:
+    #         if command.status == 1:                     # if command status = 'send'
+    #             command.status = command.status + 2     # make command status = 'received'
+    #             to_append = self.process_command(command,v_max,dt)
+    #             self.target_speeds.append(to_append)  # process the given command
 
     def cleanup_target_speeds(self):
         current_array = []
@@ -320,7 +326,13 @@ class aircraft:
             # print 'S d: ',command.par['distance'],' v:',command.par['v_target']                           # if command is a speed command
             distance = command.par['distance']                  # distance at which speed should be changed (given in the command)
             v_target = command.par['v_target']                # commanded speed (not yet implemented)
-            return self.speed_command(distance,v_target)               # determine operation necessary for executing the command
+            return self.speed_command(distance,v_target)  # determine operation necessary for executing the command
+        elif command.type == 'route':
+            # Only accept routes to the destination as new route!
+            if self.atc_goal == command.par['route'][-1]:
+                self.route = command.par['route']
+            return False
+
 
     #determine operation for heading command
     def heading_command(self,distance,turn_angle):

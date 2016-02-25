@@ -220,19 +220,21 @@ class ATC:
             plane.stop = plane.stop | 1
 
     def plane_handoff_gate(self,plane,ATC_list,graph):
-        success, path = self.get_path(graph,self.id,plane.atc_goal)
+        target_atc = plane.atc[1] # Where the plane is currently going to
+        success, path = self.get_path(graph,self.id,plane.atc_goal,plane.route)
         if success:
-            target_atc = plane.atc[1] # Where the plane is currently going to
             next_atc = path[1]
+        else:
+            next_atc = self.link[0][1]
 
-            ## update graph density
-            self.increase_graph_density(graph,self.id,next_atc)
+        ## update graph density
+        self.increase_graph_density(graph,self.id,next_atc)
 
-            ## update plane -> atc assignment
-            # ATC_list[next_atc].calculate_aircraft_atc_distance(plane)
-            ATC_list[next_atc].add_plane(plane) # add to next ATC
-            self.remove_plane(plane)
-            plane.process_handoff(next_atc,float(wp_database[target_atc][1]),float(wp_database[target_atc][2]),float(wp_database[next_atc][1]),float(wp_database[next_atc][2]))
+        ## update plane -> atc assignment
+        # ATC_list[next_atc].calculate_aircraft_atc_distance(plane)
+        ATC_list[next_atc].add_plane(plane) # add to next ATC
+        self.remove_plane(plane)
+        plane.process_handoff(next_atc,float(wp_database[target_atc][1]),float(wp_database[target_atc][2]),float(wp_database[next_atc][1]),float(wp_database[next_atc][2]))
 
 
         # Set values of plane for next link
@@ -241,9 +243,22 @@ class ATC:
 ##############################
 ## Decision making
 ##############################
-    def get_path(self,graph,origin,destination):
+    def get_path(self,graph,origin,destination,route):
+        # TODO make this recursive to check first if it's possible to get a graph to the plane destination, and then loop through the plan OP last planned path
         success, path = dijkstra_path(graph,origin,destination)
+        if not success:
+            if isinstance(route, list) and len(route)>1:
+                destination = route[-1]
+                cutRoute = route[0:-1]
+                if not origin == destination:
+                    success, path = self.get_path(graph,origin,destination,cutRoute)
+            else:
+                if not isinstance(route, list):
+                    print '####### This is not a list:',route
+                # elif not len(route)>1:
+                #     print '### The route was too short:',len(route)
         return success,path
+
 
 
 ##############################
@@ -316,24 +331,26 @@ class ATC:
             'THIS IS NOT SUPPOSED TO HAPPEN! EACH PLANE MUST HAVE AN ATC!!!'
 
     def plan_operation_gate(self,graph,plane,t):
-        success, path = self.get_path(graph,self.id,plane.atc_goal)
+        success, path = self.get_path(graph,self.id,plane.atc_goal,plane.route)
         if success:
             plane.stop = plane.stop ^ (plane.stop & 8)
             next_atc = path[1] #selects the next atc
             # calculate new heading
             turn_angle = self.calculate_heading_change(plane,next_atc)
             self.set_operation_parameters(plane,next_atc,turn_angle,t)
+            self.send_route_to_plane(plane,path,t)
         else:
             plane.stop = plane.stop | 8
     
     def plan_operation_intersection(self,graph,plane,t):
-        success, path = self.get_path(graph,self.id,plane.atc_goal)
+        success, path = self.get_path(graph,self.id,plane.atc_goal,plane.route)
         if success:
             plane.stop = plane.stop ^ (plane.stop & 8)
             next_atc = path[1] #selects the next atc
             # calculate new heading
             turn_angle = self.calculate_heading_change(plane,next_atc) 
             self.set_operation_parameters(plane,next_atc,turn_angle,t)
+            self.send_route_to_plane(plane,path,t)
         else:
             plane.stop = plane.stop | 8
 
@@ -350,6 +367,14 @@ class ATC:
         par['next_atc'] = next_atc
         par['turn_angle'] = turn_angle
         par['distance'] = distance
+        # send command to plane
+        plane_command = command(command_type, self.id, plane.id, t, 1, par) #1 = send
+        plane.op.append(plane_command)
+
+    def send_route_to_plane(self,plane,route,t):
+        par = {}
+        command_type = 'route'
+        par['route'] = route
         # send command to plane
         plane_command = command(command_type, self.id, plane.id, t, 1, par) #1 = send
         plane.op.append(plane_command)

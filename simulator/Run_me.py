@@ -19,6 +19,7 @@ import os
 #import the simulator
 from SIM.simulator import *
 from SIM.simulator_stop_criteria import *
+from matplotlib.cbook import boxplot_stats
 
 '''Configuring the simulator'''
 Map = False# Activate or deactivate the map
@@ -26,6 +27,7 @@ runs = 1                # number of runs
 # spawnrate = [1,20,40,60,80,100,120,140,160,180,200,220,240]       # rate [aircraft/hour] at which aircraft are added
 # spawnrate = [110,114,118,124,128]
 spawnrate = [112,116,122,126,130]
+# spawnrate = [240]
 n_prop = [0]            # degree of propagation
 t_simulated = 3600      # simulation time [s]
 dt = 0.5                # timestep [s]
@@ -74,10 +76,10 @@ for i in range(len(spawnrate)):
             trial = trial + 1
             print "run",trial," finished..."
 
-            # filename_aircraft_pos = 'aircraftPos_' + str(spawnrate[i]) + '_' + str(trial) + '.csv'
+            filename_aircraft_pos = 'aircraftPos_' + str(spawnrate[i]) + '_' + str(trial) + '.csv'
             # filename_edge_value = 'edgeValue_' + str(spawnrate[i]) + '_' + str(trial) + '.csv'
 
-            # write_data(filename_aircraft_pos,position_array)
+            write_data(filename_aircraft_pos,position_array)
             # write_data(filename_edge_value,edge_array)
 
             if trial == min_num_trials:
@@ -107,4 +109,6 @@ for i in range(len(spawnrate)):
             averages_data['speed'] = v_average_list
             averages_data['stop_types'] = stop_type_list
             averages_array = compile_averages_data(averages_data,[1,2,4,8,16,32,64,128,256,512])
+            # print [item[4] for item in averages_array]
+            # print boxplot_stats([item[4] for item in averages_array])
             write_data(filename_averages,averages_array)

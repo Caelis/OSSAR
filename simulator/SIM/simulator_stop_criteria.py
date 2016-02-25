@@ -43,6 +43,7 @@ def append_stop_type_list(stop_type_list,position_array,stop_criteria,trial,marg
     for option in existing_stop_types:
         stop_types[str(option)] = 0
     for x in xrange(len(position_array)):
+        # TODO zip(*position_array)[-1]
         stop_type = int(position_array.item(x,-1)) #stop type for this aircraft
         stop_types = stop_types_loop(stop_type,stop_types,existing_stop_types)
     stop_type_list.append(stop_types)
@@ -82,7 +83,7 @@ def check_plane_stop(stop_type_list,stop_criteria,trial,marge,Za):
 #        print key_list
         mean = sum(option1[key] for option1 in stop_type_list) / length
         maximum = max([x[key] for x in stop_type_list])
-        std = np.sqrt(sum(abs(mean - np.array([option2[key] for option2 in stop_type_list]))) / length)
+        std = np.sqrt( sum(abs(mean - np.array([option2[key] for option2 in stop_type_list]))) / length )
 
         ### HEIKO
         if abs(mean) < 1:

@@ -107,6 +107,7 @@ def map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X
 
                 if plane.stop:
                     id_string = id_string + ' Stop: ' + str(plane.stop) + '!'
+                id_string = str(plane.route)
                 font = pg.font.Font(None, 14)
                 text = font.render(id_string, 1, (10, 10, 10))
                 center_x_id = plane.x_pos + 75
