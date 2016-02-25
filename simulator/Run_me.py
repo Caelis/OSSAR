@@ -19,6 +19,7 @@ import os
 #import the simulator
 from SIM.simulator import *
 from SIM.simulator_stop_criteria import *
+from SIM.process_results import *
 # from matplotlib.cbook import boxplot_stats
 
 '''Configuring the simulator'''
@@ -28,14 +29,14 @@ runs = 1                # number of runs
 
 # spawnrate = [1,60,120,180,240]       # rate [aircraft/hour] at which aircraft are added
 # spawnrate = [20,80,140,200]
-spawnrate = [40,100,160,220]
-# spawnrate =[400]
+# spawnrate = [40,100,160,220]
+spawnrate =[120]
 
 n_prop = [0]            # degree of propagation
 t_simulated = 3600      # simulation time [s]
-dt = 0.9                # timestep [s]
+dt = 0.5                # timestep [s]
 runway_throughput = 120 # rate[aircraft/hour] at which aircraft can take-off/land
-min_num_trials = 100    # minimum number of trial runs
+min_num_trials = 5    # minimum number of trial runs
 
 
 area = 30               # airspace area
@@ -79,10 +80,10 @@ for i in range(len(spawnrate)):
             trial = trial + 1
             print "run",trial," finished..."
 
-            filename_aircraft_pos = 'aircraftPos_' + str(spawnrate[i]) + '_' + str(trial) + '.csv'
+            # filename_aircraft_pos = 'aircraftPos_' + str(spawnrate[i]) + '_' + str(trial) + '.csv'
             # filename_edge_value = 'edgeValue_' + str(spawnrate[i]) + '_' + str(trial) + '.csv'
 
-            write_data(filename_aircraft_pos,position_array)
+            # write_data(filename_aircraft_pos,position_array)
             # write_data(filename_edge_value,edge_array)
 
             if trial == min_num_trials:
@@ -91,7 +92,10 @@ for i in range(len(spawnrate)):
             
 #            Determine if the simulator should stop running.
             position_array = np.matrix(position_array)
-            looping,v_average_list,stop_type_list = simulator_stop_criteria(position_array,v_average_list,stop_type_list,trial,min_num_trials,marge,Za)
+
+            v_average_list,stop_type_list = append_to_result_lists(position_array,v_average_list,stop_type_list)
+
+            looping = simulator_stop_criteria(v_average_list,stop_type_list,trial,min_num_trials,marge,Za)
             # print stop_type_list
             # if len(v_average_list)>=100: # This loop determines when the simulator should stop running.
             #     average1 = np.mean(throughput_list)

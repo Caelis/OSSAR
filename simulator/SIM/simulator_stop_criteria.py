@@ -9,16 +9,13 @@ Output:
 
 import numpy as np
 
-def simulator_stop_criteria(position_array,v_average_list,stop_type_list,trial,min_num_trials,marge,Za):
+def simulator_stop_criteria(v_average_list,stop_type_list,trial,min_num_trials,marge,Za):
     stop_criteria = []
     looping = True
 
-    v_average_list = append_v_average_list(position_array,v_average_list)
-    stop_type_list = append_stop_type_list(stop_type_list,position_array,stop_criteria,trial,marge,Za)
-
     if len(v_average_list) >= min_num_trials: # This loop determines when the simulator should stop running.
-        stop_criteria = check_average_speed(v_average_list,stop_criteria,trial,marge,Za) #determine if avarge speeds are reliable
-        stop_criteria = check_plane_stop(stop_type_list,stop_criteria,trial,marge,Za)
+        stop_criteria = check_average_speed(v_average_list,stop_criteria,trial,marge,Za,min_num_trials) #determine if avarge speeds are reliable
+        stop_criteria = check_plane_stop(stop_type_list,stop_criteria,trial,marge,Za,min_num_trials)
 
     #check if all stop criteria are true, if yes stop simulator, else continue
     print stop_criteria
@@ -28,31 +25,17 @@ def simulator_stop_criteria(position_array,v_average_list,stop_type_list,trial,m
             break
         else:
             looping = False
-    return looping,v_average_list,stop_type_list
-
-#appends the average taxi_speed for one simulation to v_average_list
-def append_v_average_list(position_array,v_average_list):
-    v_average = position_array.mean(0)[0,5] #gives the mean of the speed colunmn
-    v_average_list.append(v_average)
-    return v_average_list
-
-#appends the amount of stops per stop type for one simulation to stop_type_list
-def append_stop_type_list(stop_type_list,position_array,stop_criteria,trial,marge,Za):
-    stop_types = {} #stop types for a single simulation
-    existing_stop_types = [1,2,4,8,16,32,64,128,256,512]
-    for option in existing_stop_types:
-        stop_types[str(option)] = 0
-    for x in xrange(len(position_array)):
-        # TODO zip(*position_array)[-1]
-        stop_type = int(position_array.item(x,-1)) #stop type for this aircraft
-        stop_types = stop_types_loop(stop_type,stop_types,existing_stop_types)
-    stop_type_list.append(stop_types)
-    return stop_type_list
+    return looping
 
 #Checks if the average speeds are within the confidence interval
-def check_average_speed(v_average_list,stop_criteria,trial,marge,Za):
-    mean_v_average = np.mean(v_average_list)
-    std_v_average = np.std(v_average_list, ddof = 1)
+def check_average_speed(v_average_list, stop_criteria, trial, marge, Za, min_num_before_filter):
+    this_v_average_list = np.array(v_average_list)
+
+    if trial>min_num_before_filter:
+        this_v_average_list = reject_outliers(this_v_average_list)
+
+    mean_v_average = np.mean(this_v_average_list)
+    std_v_average = np.std(this_v_average_list, ddof = 1)
 
     ### HEIKO
     if abs(mean_v_average) < 1:
@@ -68,32 +51,24 @@ def check_average_speed(v_average_list,stop_criteria,trial,marge,Za):
     stop_criteria.append(v_avg_stop)
     return stop_criteria
 
-#loops through all existing stop types to see if there are one or more active in each datapoint
-def stop_types_loop(stop_type,stop_types,existing_stop_types):
-    for option in existing_stop_types:
-        if (stop_type & option) > 0:
-            stop_types[str(option)] = stop_types[str(option)] + 1
-    return stop_types
-
 #checks if each stop type is within the confidence interval
-def check_plane_stop(stop_type_list,stop_criteria,trial,marge,Za):
+def check_plane_stop(stop_type_list,stop_criteria,trial,marge,Za,min_num_before_filter):
     for stop_type_column in stop_type_list[0]:
-        length = len(stop_type_list)
-        sum_std = 0
-        # sum for the std calculation
-#        key_list = (option2[key] for option2 in stop_type_list)
-#        print key_list
-        mean = sum(option1[stop_type_column] for option1 in stop_type_list) / length
-        maximum = max([x[stop_type_column] for x in stop_type_list])
 
         this_stop_type_list = []
-        # sum_std = 0
-        for rowNum in stop_type_list:
-            # sum_std = sum_std + ((stop_type_list[rowNum][stop_type_column]-mean)**2)
-            this_stop_type_list.append(stop_type_list[rowNum][stop_type_column])
+        for row in stop_type_list:
+            this_stop_type_list.append(row[stop_type_column])
+        # this_stop_type_list = zip(*stop_type_list)[stop_type_column]
 
-        # std = np.sqrt( sum(abs(mean - np.array([option2[stop_type_column] for option2 in stop_type_list]))) / length )
-        # std = np.sqrt(1/(length-1) * sum_std)
+        this_stop_type_list = np.array(this_stop_type_list)
+
+        if trial>min_num_before_filter:
+            this_stop_type_list = reject_outliers(this_stop_type_list)
+
+        mean = np.mean(this_stop_type_list)
+
+        maximum = np.max(this_stop_type_list)
+
         std = np.std(this_stop_type_list, ddof = 1)
 
         ### HEIKO
@@ -112,3 +87,11 @@ def check_plane_stop(stop_type_list,stop_criteria,trial,marge,Za):
             key_stop = True
         stop_criteria.append(key_stop)
     return stop_criteria
+
+# not used this http://stackoverflow.com/questions/22354094/pythonic-way-of-detecting-outliers-in-one-dimensional-observation-data
+def reject_outliers(data, m = 2.):
+    #http://stackoverflow.com/questions/11686720/is-there-a-numpy-builtin-to-reject-outliers-from-a-list
+    d = np.abs(data - np.median(data))
+    mdev = np.median(d)
+    s = d/mdev if mdev else 0.
+    return data[s<m]
