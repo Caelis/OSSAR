@@ -52,7 +52,7 @@ def append_stop_type_list(stop_type_list,position_array,stop_criteria,trial,marg
 #Checks if the average speeds are within the confidence interval
 def check_average_speed(v_average_list,stop_criteria,trial,marge,Za):
     mean_v_average = np.mean(v_average_list)
-    std_v_average = np.std(v_average_list)
+    std_v_average = np.std(v_average_list, ddof = 1)
 
     ### HEIKO
     if abs(mean_v_average) < 1:
@@ -77,13 +77,24 @@ def stop_types_loop(stop_type,stop_types,existing_stop_types):
 
 #checks if each stop type is within the confidence interval
 def check_plane_stop(stop_type_list,stop_criteria,trial,marge,Za):
-    for key in stop_type_list[0]:
+    for stop_type_column in stop_type_list[0]:
         length = len(stop_type_list)
+        sum_std = 0
+        # sum for the std calculation
 #        key_list = (option2[key] for option2 in stop_type_list)
 #        print key_list
-        mean = sum(option1[key] for option1 in stop_type_list) / length
-        maximum = max([x[key] for x in stop_type_list])
-        std = np.sqrt( sum(abs(mean - np.array([option2[key] for option2 in stop_type_list]))) / length )
+        mean = sum(option1[stop_type_column] for option1 in stop_type_list) / length
+        maximum = max([x[stop_type_column] for x in stop_type_list])
+
+        this_stop_type_list = []
+        # sum_std = 0
+        for rowNum in stop_type_list:
+            # sum_std = sum_std + ((stop_type_list[rowNum][stop_type_column]-mean)**2)
+            this_stop_type_list.append(stop_type_list[rowNum][stop_type_column])
+
+        # std = np.sqrt( sum(abs(mean - np.array([option2[stop_type_column] for option2 in stop_type_list]))) / length )
+        # std = np.sqrt(1/(length-1) * sum_std)
+        std = np.std(this_stop_type_list, ddof = 1)
 
         ### HEIKO
         if abs(mean) < 1:

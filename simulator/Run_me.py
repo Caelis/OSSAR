@@ -19,18 +19,21 @@ import os
 #import the simulator
 from SIM.simulator import *
 from SIM.simulator_stop_criteria import *
-from matplotlib.cbook import boxplot_stats
+# from matplotlib.cbook import boxplot_stats
 
 '''Configuring the simulator'''
 Map = False# Activate or deactivate the map
 runs = 1                # number of runs 
 # spawnrate = [1,20,40,60,80,100,120,140,160,180,200,220,240]       # rate [aircraft/hour] at which aircraft are added
-# spawnrate = [110,114,118,124,128]
-spawnrate = [112,116,122,126,130]
-# spawnrate = [240]
+
+# spawnrate = [1,60,120,180,240]       # rate [aircraft/hour] at which aircraft are added
+# spawnrate = [20,80,140,200]
+spawnrate = [40,100,160,220]
+# spawnrate =[400]
+
 n_prop = [0]            # degree of propagation
 t_simulated = 3600      # simulation time [s]
-dt = 0.5                # timestep [s]
+dt = 0.9                # timestep [s]
 runway_throughput = 120 # rate[aircraft/hour] at which aircraft can take-off/land
 min_num_trials = 100    # minimum number of trial runs
 

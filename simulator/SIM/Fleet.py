@@ -11,7 +11,7 @@ Output:
 
 #import modules
 from aircraft_class import *
-from flightplan_class import *
+# from flightplan_class import *
 from ATC_class import ATC
 import random as rnd
 import numpy as np

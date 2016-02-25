@@ -105,7 +105,7 @@ class aircraft:
         # print self.deceleration
 
         # 7. deceleration decision (based on target speeds)
-        self.deceleration_decision()
+        self.deceleration_decision(separation)
         # print self.deceleration
 
     def process_commands(self):
@@ -147,9 +147,10 @@ class aircraft:
             acceleration = self.comfort_acceleration
         self.deceleration = -acceleration
 
-    def deceleration_decision(self):
+    def deceleration_decision(self,separation):
         if self.stop:
             self.deceleration = self.max_deceleration
+            # self.stop_type_decision(separation)
         else:
             temp_deceleration = 0
 
@@ -164,6 +165,38 @@ class aircraft:
                     self.deceleration = temp_deceleration
                 else:
                     self.deceleration = self.max_deceleration
+
+    def stop_type_decision(self,separation):
+        # After handoff threshold
+        if self.stop & 1:
+            self.is_active = False
+        # after pre-handoff
+        if self.stop & 2:
+            self.deceleration = self.max_deceleration
+        # depreciated
+        if self.stop & 4:
+            self.deceleration = self.max_deceleration
+        # no successful path planned
+        if self.stop & 8:
+            self.deceleration = self.calc_acceleration(0, self.distance_to_atc-separation)
+        # runway busy
+        if self.stop & 16:
+            self.deceleration = self.calc_acceleration(0, self.distance_to_atc-separation)
+        # depreciated
+        if self.stop & 32:
+            self.deceleration = self.max_deceleration
+        # no Operation path planned
+        if self.stop & 64:
+            self.deceleration = self.calc_acceleration(0, self.distance_to_atc-separation)
+        # no path at pre-handoff
+        if self.stop & 128:
+            self.deceleration = self.max_deceleration
+        # unsolvable conflict
+        if self.stop & 256:
+            self.is_active = False
+        # Gate busy
+        if self.stop & 512:
+            self.is_active = False
 
     def check_if_ac_can_stop(self,distance,type):
         if distance >= self.stopping_distance(type):
@@ -191,6 +224,8 @@ class aircraft:
         return acceleration
 
     def process_handoff(self,next_atc,x_beg,y_beg,x_des,y_des):
+        if len(self.route)>0 and self.route[0] == self.atc[0] and self.route[1] == next_atc:
+            self.route = self.route[1:]
         self.target_speeds = []
         self.op = []
         self.par_avoid = {}

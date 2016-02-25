@@ -118,19 +118,22 @@ class ATC:
             'THIS IS NOT SUPPOSED TO HAPPEN! EACH NODE MUST HAVE A TYPE!!!'
 
     def pre_handoff_intersection(self,plane,graph):
-        plane.stop = plane.stop ^ (plane.stop & 2)
-        if plane.op[-1].par.has_key('next_atc'):
-            target_atc = plane.atc[1] # Where the plane is currently going to
-            next_atc = plane.op[-1].par['next_atc'] # where the plane is going to next
-            if graph.has_edge(target_atc,next_atc):
-                plane.ready_for_hand_off = True
-                self.increase_graph_density(graph,target_atc,next_atc)
-                plane.stop = plane.stop ^ (plane.stop & 2)
-                # print 'Pre Handoff successfull Plane ' + str(plane.id) + ' ATC: ' + str(self.id)
+        if len(plane.op) > 0:
+            plane.stop = plane.stop ^ (plane.stop & 2)
+            if plane.op[-1].par.has_key('next_atc'):
+                target_atc = plane.atc[1] # Where the plane is currently going to
+                next_atc = plane.op[-1].par['next_atc'] # where the plane is going to next
+                if graph.has_edge(target_atc,next_atc):
+                    plane.ready_for_hand_off = True
+                    self.increase_graph_density(graph,target_atc,next_atc)
+                    plane.stop = plane.stop ^ (plane.stop & 2)
+                    # print 'Pre Handoff successfull Plane ' + str(plane.id) + ' ATC: ' + str(self.id)
+                else:
+                    plane.stop = plane.stop | 2
+                    # print 'Emergency stop Plane ' + str(plane.id) + ' ATC: ' + str(self.id) + ' code: ' + str(plane.stop) + ' to: ' + str(plane.atc_goal)
+
             else:
                 plane.stop = plane.stop | 2
-                # print 'Emergency stop Plane ' + str(plane.id) + ' ATC: ' + str(self.id) + ' code: ' + str(plane.stop) + ' to: ' + str(plane.atc_goal)
-
         else:
             plane.stop = plane.stop | 2
 
@@ -244,17 +247,16 @@ class ATC:
 ## Decision making
 ##############################
     def get_path(self,graph,origin,destination,route):
-        # TODO make this recursive to check first if it's possible to get a graph to the plane destination, and then loop through the plan OP last planned path
         success, path = dijkstra_path(graph,origin,destination)
         if not success:
-            if isinstance(route, list) and len(route)>1:
+            if not isinstance(route, list):
+                print '####### This is not a list:',route
+                route = [route]
+            if len(route)>0:
                 destination = route[-1]
                 cutRoute = route[0:-1]
-                if not origin == destination:
-                    success, path = self.get_path(graph,origin,destination,cutRoute)
-            else:
-                if not isinstance(route, list):
-                    print '####### This is not a list:',route
+                # if not origin == destination:
+                success, path = self.get_path(graph,origin,destination,cutRoute)
                 # elif not len(route)>1:
                 #     print '### The route was too short:',len(route)
         return success,path
@@ -344,7 +346,7 @@ class ATC:
     
     def plan_operation_intersection(self,graph,plane,t):
         success, path = self.get_path(graph,self.id,plane.atc_goal,plane.route)
-        if success:
+        if success and len(path)>1:
             plane.stop = plane.stop ^ (plane.stop & 8)
             next_atc = path[1] #selects the next atc
             # calculate new heading
