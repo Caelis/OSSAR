@@ -65,14 +65,12 @@ def check_plane_stop(stop_type_list,stop_criteria,trial,marge,Za,min_num_before_
 
         this_stop_type_list = np.array(this_stop_type_list)
 
-        maximum = np.max(this_stop_type_list)
-
-        # if maximum != 0:
-
         filtered_list = reject_outliers(this_stop_type_list)
 
         if filtered_list.size>min_num_before_filter:
             this_stop_type_list = filtered_list
+
+        maximum = np.max(this_stop_type_list)
 
         mean = np.mean(this_stop_type_list)
 
