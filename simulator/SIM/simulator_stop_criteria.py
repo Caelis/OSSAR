@@ -31,8 +31,11 @@ def simulator_stop_criteria(v_average_list,stop_type_list,trial,min_num_trials,m
 def check_average_speed(v_average_list, stop_criteria, trial, marge, Za, min_num_before_filter):
     this_v_average_list = np.array(v_average_list)
 
-    if trial>min_num_before_filter:
-        this_v_average_list = reject_outliers(this_v_average_list)
+
+    filtered_list = reject_outliers(this_v_average_list)
+
+    if filtered_list.size>min_num_before_filter:
+        this_v_average_list = filtered_list
 
     mean_v_average = np.mean(this_v_average_list)
     std_v_average = np.std(this_v_average_list, ddof = 1)
@@ -44,7 +47,7 @@ def check_average_speed(v_average_list, stop_criteria, trial, marge, Za, min_num
         d_v_avg = marge*mean_v_average
     ###
     # d_v_avg = marge * mean_v_average
-    if 2 *Za * std_v_average / np.sqrt(trial) < d_v_avg:
+    if float(2 *Za * std_v_average) / np.sqrt(trial) <= d_v_avg:
         v_avg_stop = True
     else:
         v_avg_stop = False
@@ -81,7 +84,7 @@ def check_plane_stop(stop_type_list,stop_criteria,trial,marge,Za,min_num_before_
         else:
             d = marge * mean
         if maximum != 0:
-            if 2 *Za * std / np.sqrt(trial) < d:
+            if float(2 *Za * std) / np.sqrt(trial) <= d:
                 key_stop = True
             else:
                 key_stop = False
