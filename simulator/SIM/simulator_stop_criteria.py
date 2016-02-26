@@ -62,12 +62,16 @@ def check_plane_stop(stop_type_list,stop_criteria,trial,marge,Za,min_num_before_
 
         this_stop_type_list = np.array(this_stop_type_list)
 
-        if trial>min_num_before_filter:
-            this_stop_type_list = reject_outliers(this_stop_type_list)
+        maximum = np.max(this_stop_type_list)
+
+        # if maximum != 0:
+
+        filtered_list = reject_outliers(this_stop_type_list)
+
+        if filtered_list.size>min_num_before_filter:
+            this_stop_type_list = filtered_list
 
         mean = np.mean(this_stop_type_list)
-
-        maximum = np.max(this_stop_type_list)
 
         std = np.std(this_stop_type_list, ddof = 1)
 
@@ -76,8 +80,6 @@ def check_plane_stop(stop_type_list,stop_criteria,trial,marge,Za,min_num_before_
             d = marge
         else:
             d = marge * mean
-        ###
-        # d = marge * mean
         if maximum != 0:
             if 2 *Za * std / np.sqrt(trial) < d:
                 key_stop = True
@@ -89,9 +91,15 @@ def check_plane_stop(stop_type_list,stop_criteria,trial,marge,Za,min_num_before_
     return stop_criteria
 
 # not used this http://stackoverflow.com/questions/22354094/pythonic-way-of-detecting-outliers-in-one-dimensional-observation-data
-def reject_outliers(data, m = 2.):
-    #http://stackoverflow.com/questions/11686720/is-there-a-numpy-builtin-to-reject-outliers-from-a-list
-    d = np.abs(data - np.median(data))
-    mdev = np.median(d)
-    s = d/mdev if mdev else 0.
-    return data[s<m]
+def reject_outliers(data, w = 1.5):
+    # use the MATLAB whiskers
+    lower,upper = np.percentile(data,[25,75])
+    upper_bound = upper + w*(upper-lower)
+    lower_bound = lower - w*(upper-lower)
+    return data[(data>=lower_bound) & (data<=upper_bound)]
+    # #http://stackoverflow.com/questions/11686720/is-there-a-numpy-builtin-to-reject-outliers-from-a-list
+    # d = np.abs(data - np.median(data))
+    # mdev = np.median(d)
+    # s = d/mdev if mdev else 0.
+    # return data[s<m]
+
