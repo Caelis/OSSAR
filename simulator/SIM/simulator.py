@@ -11,15 +11,16 @@ Input: Fleet package, ATC_class package, Map package
 from Fleet import *
 from ATC_class import ATC
 from ATC_class import create_ATC
-# from Map import *
+from Map import *
 from dijkstra_structure import *
 from runway_class import *
 
 #import python modules
 from numpy import *
 from math import *
-# import pygame as pg
+import pygame as pg
 import networkx as nx
+import copy
 
 #import data
 from data_import import wpl_database
@@ -46,13 +47,41 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
     mean = 3600/spawnrate #mean of aircraft spawning time
     std = 1 #standerd deviation of aircraft spawning time
     runway_occupance_time = 3600/runway_throughput #time until the next aircraft can take-off/land
+
+    # define default parameters for the simulation
+    default_values= {}
+    default_values['v_max'] = v_max
+    default_values['v_turn'] = 10*0.5144
+    default_values['acc_standard'] = 0.8
+    default_values['dec_standard'] = -2
     
     #initiating the simulator
     if Map == True:
         reso, scr, scrrect, plane_pic, piclist, X_waypoint, Y_waypoint = map_initialization(wp_database)
 
+    # initiate the Dijksta algorithm
+    taxiwayGraph0 = initiate_dijkstra(v_max)
+    taxiwayGraphDummy0, pos = add_dummy_edges(taxiwayGraph0,default_values)
+
+    #simulator loop
+    # taxiwayGraph = nx.DiGraph(taxiwayGraph0)
+    taxiwayGraph = taxiwayGraph0.copy()
+    taxiwayGraphDummy = taxiwayGraphDummy0.copy()
+
+    graphDict={}
+    graphDict['graph'] = taxiwayGraph
+    graphDict['graphOrig'] = taxiwayGraph0
+    graphDict['dummyGraph'] = taxiwayGraphDummy
+    graphDict['dummyGraphOrig'] = taxiwayGraphDummy0
+
+    # print graphDict['dummyGraphOrig']
+    # print pos
+
     # create ATC for each waypoint
     ATC_list = create_ATC(wp_database,ATC_list)
+    # for atc in ATC_list:
+    #     print atc.type
+    # print ATC_list
 
     # create an empty list of aircraft
     aircraft_list = []
@@ -62,23 +91,22 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
 
     #create all runways
     idnumber_rw, runway_list = create_runway(idnumber_rw,ATC_list,runway_list,runway_occupance_time)
-    
-    # initiate the Dijksta algorithm
-    taxiwayGraph0 = initiate_dijkstra(v_max)
-
-    #simulator loop
-    taxiwayGraph = nx.DiGraph(taxiwayGraph0)
 
     # perpare for export
     position_array = []
     edges_array = []
     while running == True:
+        # for key, value in taxiwayGraphDummy.adjacency_iter():
+        #     # print key
+        #     for inner_key, inner_value in value.items():
+        #         if inner_value['density'] > 0:
+        #             print key,'->',inner_key,':',inner_value
         # print 'Time is: ' + str(t)
         # time.sleep(5)
         # taxiwayGraph = nx.DiGraph(taxiwayGraph0)
 
         #update Dijkstra structure based on current traffic situation
-        taxiwayGraph = update_dijsktra(ATC_list,taxiwayGraph,separation,v_max)
+        # update_dijsktra(ATC_list,taxiwayGraph,taxiwayGraphDummy,separation,default_values)
 
         #update runways
         update_runway(runway_list,runway_occupance_time,ATC_list,dt)
@@ -87,7 +115,7 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
         update_all_aircraft_position(aircraft_list,dt)
 
         # update ATC (decision making here)
-        taxiwayGraph = update_all_ATC(ATC_list,runway_list,taxiwayGraph,radar_range,runway_occupance_time,dt,t,v_max)
+        taxiwayGraph = update_all_ATC(ATC_list,runway_list,graphDict,radar_range,runway_occupance_time,dt,t,v_max)
 
         # update aircraft (decision making)
         t_stop_total,plane_speed = update_aircraft(aircraft_list,plane_speed,t_stop_total,dt,separation,v_max,radar_range,t)
@@ -106,7 +134,7 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
         # idnumber = add_random_aircraft_at_rate(spawnrate,idnumber,ATC_list,aircraft_list,runway_list,r,v_max,taxiwayGraph,t,dt)
         # store aircraft position before removing inactive aircraft
         collect_data(position_array,'aircraft_position',aircraft_list,t)
-        collect_data(edges_array,'edge_values',taxiwayGraph,t)
+        # collect_data(edges_array,'edge_values',taxiwayGraph,t)
 
 
         # remove aircraft that took off

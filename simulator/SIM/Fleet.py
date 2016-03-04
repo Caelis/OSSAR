@@ -27,7 +27,6 @@ from data_import import data
 #Uses a normal distribution to determine when the next aircaft will arrive
 def aircraft_interval(t_next_aircraft,idnumber,ATC_list,aircraft_list,runway_list,r,v_max,create,mean,std,graph,min_separation,t,dt):
     if create == True:
-
         idnumber = create_aircraft(idnumber,ATC_list,aircraft_list,runway_list,r,v_max,graph,min_separation,t,dt)
         t_next_aircraft = t + np.random.normal(mean,std)
         create = False
@@ -36,13 +35,13 @@ def aircraft_interval(t_next_aircraft,idnumber,ATC_list,aircraft_list,runway_lis
             create = True
     return t_next_aircraft,create,idnumber
 
-def add_random_aircraft_at_rate(rate,idnumber,ATC_list,aircraft_list,runway_list,r,v_max,graph,t,dt):
-    randNumber = random.random()
-    if randNumber <= rate/float(60)/float(60)*dt:
-        idnumber = create_aircraft(idnumber,ATC_list,aircraft_list,runway_list,r,v_max,graph,t,dt)
-        return idnumber
-    else:
-        return False
+# def add_random_aircraft_at_rate(rate,idnumber,ATC_list,aircraft_list,runway_list,r,v_max,graph,t,dt):
+#     randNumber = random.random()
+#     if randNumber <= rate/float(60)/float(60)*dt:
+#         idnumber = create_aircraft(idnumber,ATC_list,aircraft_list,runway_list,r,v_max,graph,t,dt)
+#         return idnumber
+#     else:
+#         return False
 
 def check_if_gate_available(min_separaion,ATC_list,ATC_gate,graph):
     source = ATC_gate
@@ -66,10 +65,7 @@ def check_if_gate_available(min_separaion,ATC_list,ATC_gate,graph):
         # print link_distance,' - ',closest_ac_pos,'(',ATC_list[target].locp[-1].id,') = ',distance_closets_aircraft
         return False
 
-
-
 def create_aircraft(idnumber,ATC_list,aircraft_list,runway_list,r,v_max,graph,min_separation,t,dt): #creates aircraft when nessecary
-
     # select origin and destination
     ATC_gate = int(rnd.choice(g_database))              # Random select a departure gate of the aircraft
     ATC_runway = int(rnd.choice(rw_database))           # Random select a runway entrance of the aircraft
@@ -96,7 +92,6 @@ def create_aircraft(idnumber,ATC_list,aircraft_list,runway_list,r,v_max,graph,mi
     new_plane = aircraft(idnumber,plane_type,speed,max_speed,max_acc,max_dcc,x1,y1,x1,y1,x2,y2,heading,ATC_gate,ATC_runway)
     aircraft_list.append(new_plane)
 
-    # add plane to the responsible ATC
     if gate_available:
         ATC_list[ATC_gate].add_plane(new_plane)
     else:
@@ -117,14 +112,15 @@ def create_aircraft(idnumber,ATC_list,aircraft_list,runway_list,r,v_max,graph,mi
     return idnumber
 
 #loops through all ATC and appends a
-def update_all_ATC(ATC_list,runway_list,graph,radar_range,runway_occupance_time,dt,t,v_max):
+def update_all_ATC(ATC_list,runway_list,graphDict,radar_range,runway_occupance_time,dt,t,v_max):
+    graph = graphDict['graph']
     ## each atc
     for atc in ATC_list:
         ### radar (distance of aircraft from ATC)
         ### handoff decision
         ### graph update
         ### heading and speed commands
-        graph = atc.update(ATC_list,runway_list,v_max,graph,runway_occupance_time,dt,t) # check if commands for the plane are necessary and plan operation
+        graph = atc.update(ATC_list,runway_list,v_max,graphDict,runway_occupance_time,dt,t) # check if commands for the plane are necessary and plan operation
         # aircraft_radar_list(atc)    # check for each aircraft which other plane are within a certain(radar) range
     return graph
 
