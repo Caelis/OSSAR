@@ -22,7 +22,7 @@ import time
 class aircraft:
 
     # Properties of the aircraft 
-    def __init__(self,Number,Type,Speed,max_speed,max_acceleration,max_decceleration,X0,Y0,X1,Y1,X2,Y2,heading,ATC_id,ATC_runway):
+    def __init__(self,Number,Type,Speed,max_speed,max_acceleration,max_decceleration,X0,Y0,X1,Y1,X2,Y2,heading,ATC_id,ATC_runway,t):
         self.type = int(Type)
         self.id = Number            # identification number of the aircraft
         self.v = Speed              # current speed of the aircraft
@@ -59,6 +59,7 @@ class aircraft:
         self.last_distance_travelled = 0
         self.target_speeds = []
         self.was_just_handed_off = False
+        self.spawntime = t
 
     def update(self,separation,v_max,t,dt):
         this_t_stop = 0
@@ -302,7 +303,7 @@ class aircraft:
                 to_append = self.process_command(command,v_max,dt)
                 self.target_speeds.append(to_append)  # process the given command
 
-    def cleanup_target_speeds(self):
+    def cleanup_aircraft_accelerationtarget_speeds(self):
         current_array = []
         for command_1 in self.target_speeds:
             thisCommand = False
@@ -346,19 +347,20 @@ class aircraft:
         return par_command
 
     # update speed
-    def update_speed(self,dt):
-        # if self.stop:
-        #     # print('AC: ' + str(self.id) + ' stopped in update_speed')
-        #     self.deceleration = self.max_deceleration
-        new_speed = self.v - (dt*self.deceleration)
-        # print 'new_speed = ',self.v,' - (',dt,'*',self.deceleration,')'
-        if new_speed > 0:
-            if new_speed > self.v_max:
-                self.v = self.v_max
-            else:
-                self.v = new_speed
-        else:
-            self.v = 0
+#    def update_speed(self,Aircraft_acceleration,dt):
+#        current_speed = self.v
+#        new_speed = self.v - (dt*self.deceleration)
+#        #tracks how many aircraft during the simulation accelerate from full stop
+#        if current_speed == 0 and new_speed > 0:
+#            Aircraft_acceleration = Aircraft_acceleration + 1
+#        if new_speed > 0:
+#            if new_speed > self.v_max:
+#                self.v = self.v_max
+#            else:
+#                self.v = new_speed
+#        else:
+#            self.v = 0
+#        return Aircraft_acceleration
                 
     # update hading
     def update_heading(self):
@@ -389,7 +391,7 @@ class aircraft:
         for speed_command in self.target_speeds:
             speed_command['s_target'] = speed_command['s_target']-self.last_distance_travelled
 
-    def update_pos_speed(self,dt):
+    def update_pos_speed(self,aircraft_accelerating,dt):
         # self.v = self.v - (dt*self.deceleration)
         if self.heading == False or self.heading == None: #if no heading given, determine heading
             self.update_heading()
@@ -397,7 +399,10 @@ class aircraft:
         # for distance calculation
         x_pos_old = self.x_pos
         y_pos_old = self.y_pos
-
+        
+        # for tracking of variables
+        v_old = self.v
+        
         # update position
         delta_s = -0.5*self.deceleration*dt*dt+self.v*dt
         if delta_s<0:
@@ -410,5 +415,11 @@ class aircraft:
         self.v = self.v + delta_v
         if self.v <0 :
             self.v = 0
+        
         # self.last_distance_travelled = hypot(self.x_pos-x_pos_old,self.y_pos-y_pos_old)
         self.last_distance_travelled = delta_s
+        
+        # tracks how many aircraft during the simulation accelerate from full stop
+        if v_old == 0 and self.v > 0:
+            aircraft_accelerating = aircraft_accelerating + 1
+        return aircraft_accelerating

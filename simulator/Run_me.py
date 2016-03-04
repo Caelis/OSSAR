@@ -24,7 +24,7 @@ from SIM.simulator_stop_criteria import *
 Map = False# Activate or deactivate the map
 runs = 1                # number of runs 
 # spawnrate = [1,20,40,60,80,100,120,140,160,180,200,220,240]       # rate [aircraft/hour] at which aircraft are added
-# spawnrate = [130]
+spawnrate = [130]
 # spawnrate = [126]
 # spawnrate = [100]       # rate [aircraft/hour] at which aircraft are added
 n_prop = [0]            # degree of propagation
@@ -65,7 +65,7 @@ for i in range(len(spawnrate)):
 
         while looping == True:
 #            simrun(t_simulated,area,dt,Map,n_prop)
-            throughput,t_stop_total,v_average,position_array,edge_array = simrun(t_simulated,area,dt,Map,n_prop,runway_throughput,spawnrate[i])
+            throughput,t_stop_total,v_average,position_array,edge_array,aircraft_accelerating,taxi_time_average = simrun(t_simulated,area,dt,Map,n_prop,runway_throughput,spawnrate[i])
 #            throughput_list.append(throughput)
 #            t_stop_total_list.append(t_stop_total)
 #            v_average_list.append(v_average)
@@ -105,5 +105,7 @@ for i in range(len(spawnrate)):
             averages_data = {}
             averages_data['speed'] = v_average_list
             averages_data['stop_types'] = stop_type_list
+            averages_data['plane_accelerations'] = aircraft_accelerating
+            averages_data['taxi_time'] = taxi_time_average
             averages_array = compile_averages_data(averages_data,[1,2,4,8,16,32,64,128,256])
             write_data(filename_averages,averages_array)

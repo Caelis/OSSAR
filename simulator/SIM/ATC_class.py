@@ -56,11 +56,11 @@ class ATC:
         self.check_and_remove_impossible_conflict(graph)
 
         ### handoff decision && ### graph update
-        self.handoff_decisions(ATC_list,graph,runway_list,runway_occupance_time)
+        planes_taxi_time = self.handoff_decisions(ATC_list,graph,runway_list,runway_occupance_time,t)
 
         ### heading and speed commands
         self.plan_operations(graph,t)
-        return graph
+        return graph, planes_taxi_time
 
 ##############################
 ## RADAR
@@ -159,7 +159,8 @@ class ATC:
 ##############################
 ## Hand-off
 ##############################
-    def handoff_decisions(self,ATC_list,graph,runway_list,runway_occupance_time):
+    def handoff_decisions(self,ATC_list,graph,runway_list,runway_occupance_time,t):
+        planes_taxi_time = []
         for aircraft in self.locp:
             # Pre-handoff decision
             if ((not aircraft.check_if_ac_can_stop(aircraft.distance_to_atc,'comfort')) or aircraft.stop & 16 or aircraft.stop & 2) and not aircraft.ready_for_hand_off:
@@ -170,19 +171,24 @@ class ATC:
                 aircraft.handed_off = True
                 # aircraft.stop = False
                 # print 'Handoff aircraft ' + str(aircraft.id)
-                self.plane_handoff(aircraft,ATC_list,graph,runway_list,runway_occupance_time)
+                plane_taxi_time = self.plane_handoff(aircraft,ATC_list,graph,runway_list,runway_occupance_time,t)
+                if plane_taxi_time: # plane_taxi_time is only True if the aircraft was handed of to a runway
+                    planes_taxi_time.append(plane_taxi_time)
+        return planes_taxi_time
 
-    def plane_handoff(self,plane,ATC_list,graph,runway_list,runway_occupance_time):
+    def plane_handoff(self,plane,ATC_list,graph,runway_list,runway_occupance_time,t):
+        plane_taxi_time = False
         if self.type == 4:
-            self.plane_handoff_runway(plane,ATC_list,graph,runway_list,runway_occupance_time)
+            plane_taxi_time = self.plane_handoff_runway(plane,ATC_list,graph,runway_list,runway_occupance_time,t)
         elif self.type == 1:
             self.plane_handoff_gate(plane,ATC_list,graph)
         elif self.type == 2:
             self.plane_handoff_intersection(plane,ATC_list,graph)
         else:
             'THIS IS NOT SUPPOSED TO HAPPEN! EACH NODE MUST HAVE A TYPE!!!'
+        return plane_taxi_time
 
-    def plane_handoff_runway(self,plane,ATC_list,graph,runway_list,runway_occupance_time):
+    def plane_handoff_runway(self,plane,ATC_list,graph,runway_list,runway_occupance_time,t):
         source_atc = plane.atc[0] # Where the plane is coming from
         target_atc = plane.atc[1] # Where the plane is currently going to
         # make sure that AC in waiting list of runway
@@ -197,10 +203,15 @@ class ATC:
             self.runway.waiting_list.remove(plane.id)         # remove plane from waiting_list
             self.decrease_graph_density(graph,source_atc,target_atc)
             plane.is_active = False
+
+            #calculate the taxi time
+            plane_taxi_time = t - plane.spawntime
+            
+            #remove the aircraft from the simulator            
             self.remove_plane(plane)
         else:
             print 'BIG problem!!!'
-
+        return plane_taxi_time
 
     def plane_handoff_intersection(self,plane,ATC_list,graph):
         ## Define the ATCs
