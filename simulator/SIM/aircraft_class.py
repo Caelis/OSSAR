@@ -113,7 +113,6 @@ class aircraft:
             # print self.op.par
             self.stop = self.stop ^ (self.stop & 64)
             for command in self.op:
-                # print command.par
                 if command.status & 1 and not command.status & 2:                     # if command status = 'send'
                     command.status = command.status | 2     # make command status = 'received'
                 elif command.status & 2:
@@ -224,7 +223,11 @@ class aircraft:
         return acceleration
 
     def process_handoff(self,next_atc,x_beg,y_beg,x_des,y_des):
-        if len(self.route)>0 and self.route[0] == self.atc[0] and self.route[1] == next_atc:
+        # print len(self.route)>0,self.route[0],self.atc[0],self.route[1],next_atc
+        # if self.route[0] == False:
+        #     self.route = self.route[1:]
+        if len(self.route)>0 and int(self.route[0][0]) == self.atc[0] and int(self.route[1][0]) == next_atc:
+        # elif len(self.route)>0 and int(self.route[0][0]) == self.atc[0] and int(self.route[1][0]) == next_atc:
             self.route = self.route[1:]
         self.target_speeds = []
         self.op = []
@@ -364,7 +367,7 @@ class aircraft:
             return self.speed_command(distance,v_target)  # determine operation necessary for executing the command
         elif command.type == 'route':
             # Only accept routes to the destination as new route!
-            if self.atc_goal == command.par['route'][-1]:
+            if self.atc_goal == command.par['route'][-1] or str(self.atc_goal) == command.par['route'][-1]:
                 self.route = command.par['route']
             return False
 

@@ -96,18 +96,18 @@ def map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X
             #diplay aircraft id
             if disp_aircaft_id:
                 id_string = 'ID: ' + str(plane.id)
-                id_string = id_string + ' V: ' + str(round(plane.v/0.5144,1)) + ' A: ' + str(round(plane.deceleration,1))
+                # id_string = id_string + ' V: ' + str(round(plane.v/0.5144,1)) + ' A: ' + str(round(plane.deceleration,1))
                 # id_string = str(round(plane.v,1))
                 # id_string = 'C: ' + str(plane.conflict)
                 # id_string = 'R: ' + str(len(plane.radar))
                 # id_string = str(round(plane.distance_to_atc,1))
                 # id_string = 'Going from ' + str(plane.atc[0]) + ' to ' + str(plane.atc[1]) + ' dist: ' + str(round(plane.distance_to_atc,1))
+                id_string = id_string + str(plane.route)
                 if plane.conflict:
                     id_string = id_string + ' C: ' + str(plane.conflict)
 
                 if plane.stop:
                     id_string = id_string + ' Stop: ' + str(plane.stop) + '!'
-                id_string = str(plane.route)
                 font = pg.font.Font(None, 14)
                 text = font.render(id_string, 1, (10, 10, 10))
                 center_x_id = plane.x_pos + 75

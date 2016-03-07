@@ -22,15 +22,15 @@ from SIM.simulator_stop_criteria import *
 from SIM.process_results import *
 
 '''Configuring the simulator'''
-Map = True# Activate or deactivate the map
+Map = False# Activate or deactivate the map
 runs = 1                # number of runs 
-spawnrate = [1]       # rate [aircraft/hour] at which aircraft are added
+spawnrate = [200]       # rate [aircraft/hour] at which aircraft are added
 
 n_prop = [0]            # degree of propagation
 t_simulated = 3600      # simulation time [s]
-dt = 0.5                # timestep [s]
+dt = 2               # timestep [s]
 runway_throughput = 120 # rate[aircraft/hour] at which aircraft can take-off/land
-min_num_trials = 100    # minimum number of trial runs
+min_num_trials = 500    # minimum number of trial runs
 max_num_trials = 500
 
 area = 30               # airspace area
@@ -43,6 +43,7 @@ Za = 1.96               # stop criteria for accuracy purposes
 # save_parameters['position'] = True
 # save_parameters['edges'] = True
 
+# TODO otherwise parallelize here!
 for i in range(len(spawnrate)):
     throughput_list = []    # measurements
     t_stop_total_list = []  # measurements
@@ -59,6 +60,7 @@ for i in range(len(spawnrate)):
         while looping == True:
             print spawnrate[i]
 
+            # TODO best to parallelize here?
             throughput,t_stop_total,v_average,position_array,edge_array = simrun(t_simulated,area,dt,Map,n_prop,runway_throughput,spawnrate[i])
             trial = trial + 1
             print "run",trial," finished..."

@@ -56,7 +56,8 @@ def calc_heading(x_1,y_1,x_2,y_2):
     heading = atan2((y_2-y_1), (x_2-x_1))
     return heading
 
-def add_dummy_edges(graph,default_values):
+def add_dummy_edges(graph,atc_list, default_values):
+    # TODO add original nodes as well, and connect to all possible connections
     v_turn = default_values['v_turn']
     acc_standard = default_values['acc_standard']
     dec_standard = default_values['dec_standard']
@@ -66,6 +67,11 @@ def add_dummy_edges(graph,default_values):
     turn_distance_added = 0.1
 
     for key, value in graph.adjacency_iter():
+        # Add real node to graph
+        if not largeGraph.has_node(str(key)):
+            largeGraph.add_node(str(key))
+            nx.set_node_attributes(largeGraph,'main',{str(key): key})
+            pos[str(key)]=(wp_database[key][1],wp_database[key][2])
         # print key
         for inner_key, inner_value in value.items():
             graph[key][inner_key]['linked_edges'] = []
@@ -77,7 +83,7 @@ def add_dummy_edges(graph,default_values):
             else:
                 node_label_1 = str(key) + '_' + str(inner_key)
 
-            # check if the node is in the graph already
+            # Add virtual node to new graph check if the node is in the graph already
             if not largeGraph.has_node(node_label_1):
                 largeGraph.add_node(node_label_1)
                 nx.set_node_attributes(largeGraph,'main',{node_label_1: key})
@@ -92,6 +98,7 @@ def add_dummy_edges(graph,default_values):
                 # print conn,type(conn)
                 # print key,type(key)
                 if not (conn == key and len(graph[inner_key]) > 1):
+                    # print 'Adding',key,inner_key,conn
                     if len(graph[inner_key]) > 1:
                         node_label_2 = str(inner_key) + '_' + str(conn)
                     else:
@@ -103,29 +110,44 @@ def add_dummy_edges(graph,default_values):
                         nx.set_node_attributes(largeGraph,'main',{node_label_2: inner_key})
                         pos[node_label_2]=(wp_database[inner_key][1],wp_database[inner_key][2])
 
-                    # add edge if necessary
-                    if not largeGraph.has_edge(node_label_1,node_label_2):
-                        largeGraph.add_edge(node_label_1,node_label_2)
-                        # add "turn" value to each edge to see if it was a turn
-                        if not heading_1 == heading_2:
-                            largeGraph[node_label_1][node_label_2]['turn'] = True
-                            turn_distance = turn_distance_added
-                        else:
-                            largeGraph[node_label_1][node_label_2]['turn'] = False
-                            turn_distance = 0
+                    # don't add edges towards gates, or from runways
+                    # TODO this is a temorary fix for the issue that paths were assigned through gates/through runways. This won't work for mixed arr/dep traffic
+                    if not (atc_list[inner_key].type == 1 or atc_list[key].type == 4):
+                        # add virtual edge if necessary
+                        if not largeGraph.has_edge(node_label_1,node_label_2):
+                            largeGraph.add_edge(node_label_1,node_label_2)
+                            # add "turn" value to each edge to see if it was a turn
+                            if not heading_1 == heading_2:
+                                largeGraph[node_label_1][node_label_2]['turn'] = True
+                                turn_distance = turn_distance_added
+                            else:
+                                largeGraph[node_label_1][node_label_2]['turn'] = False
+                                turn_distance = 0
 
-                        largeGraph[node_label_1][node_label_2]['original_edge'] = [key,inner_key]
-                        graph[key][inner_key]['linked_edges'].append([node_label_1,node_label_2])
+                            largeGraph[node_label_1][node_label_2]['original_edge'] = [key,inner_key]
+                            graph[key][inner_key]['linked_edges'].append([node_label_1,node_label_2])
 
-                        # get values of original link, compute for this link and add to this link
-                        distance = graph[key][inner_key]['distance']
-                        speed = graph[key][inner_key]['speed']
+                            # get values of original link, compute for this link and add to this link
+                            distance = graph[key][inner_key]['distance']
+                            speed = graph[key][inner_key]['speed']
 
-                        time_for_link = time_with_turn_penalty(distance,speed,v_turn,dec_standard,acc_standard,largeGraph[node_label_1][node_label_2]['turn'])
+                            time_for_link = time_with_turn_penalty(distance,speed,v_turn,dec_standard,acc_standard,largeGraph[node_label_1][node_label_2]['turn'])
 
-                        largeGraph[node_label_1][node_label_2]['distance'] = distance
-                        largeGraph[node_label_1][node_label_2]['density'] = graph[key][inner_key]['density']
-                        largeGraph[node_label_1][node_label_2]['weight'] = time_for_link
+                            largeGraph[node_label_1][node_label_2]['distance'] = distance
+                            largeGraph[node_label_1][node_label_2]['density'] = graph[key][inner_key]['density']
+                            largeGraph[node_label_1][node_label_2]['weight'] = time_for_link
+
+                            # add real edge if necessary
+                            if not largeGraph.has_edge(key,node_label_2):
+                                thisKey = str(key)
+                                largeGraph.add_edge(thisKey,node_label_2)
+                                largeGraph[thisKey][node_label_2]['distance'] = distance
+                                largeGraph[thisKey][node_label_2]['turn'] = largeGraph[node_label_1][node_label_2]['turn']
+                                largeGraph[thisKey][node_label_2]['density'] = graph[key][inner_key]['density']
+                                largeGraph[thisKey][node_label_2]['weight'] = time_for_link
+                                largeGraph[thisKey][node_label_2]['original_edge'] = [key,inner_key]
+                                graph[key][inner_key]['linked_edges'].append([thisKey,node_label_2])
+
 
     return largeGraph,pos
 
@@ -147,7 +169,7 @@ def update_dijsktra(ATC_list, graph, graphDummy, seperation, default_values):  #
                 speed = v_max
             else:
                 if density > 0:
-                    speed = 0.00001#v_max * (1 - (density / max_density))
+                    speed = v_max * (1 - (density / max_density))
                 else:
                     speed = v_max
 
@@ -183,6 +205,45 @@ def update_dijkstra_dummyGraph(graph,dummyGraph,default_values):
             dummyGraph[key][inner_key]['distance'] = distance
             dummyGraph[key][inner_key]['density'] = graph[origEdge[0]][origEdge[1]]['density']
             dummyGraph[key][inner_key]['weight'] = time_for_link
+
+def calculate_edge_values(edge,simulation_constants):
+    # get simulation constants
+    separation = simulation_constants['separation']
+    v_max = simulation_constants['v_max']
+    v_turn = simulation_constants['v_turn']
+    dec_standard = simulation_constants['dec_standard']
+    acc_standard = simulation_constants['acc_standard']
+    flowTheory_cutoff = simulation_constants['flowTheory_cutoff']
+
+    # get static edge values
+    density = edge['density']
+    distance = edge['distance']
+
+    # calculate dynamic edge values
+    max_density = distance / separation
+
+    ## Calculate the speeds based on density
+    if density > max_density:
+        speed = 0
+    elif density < flowTheory_cutoff * max_density: # 0.5 * max_density:  # TODO make the the 0.5 a variable that is set up in the simulator setup
+        speed = v_max
+    else:
+        if density > 0:
+            speed = v_max * (1 - (density / max_density))
+        else:
+            speed = v_max
+
+    # calcualate the conditional link time
+    if edge.has_key('turn'):
+        turn = edge['turn']
+    else:
+        turn = False
+    # time_for_link = time_with_turn_penalty(distance,speed,v_turn,dec_standard,acc_standard,edge['turn'])
+    time_for_link = time_with_turn_penalty(distance,speed,v_turn,dec_standard,acc_standard,turn)
+
+    # set dynamic edge values
+    edge['weight'] = time_for_link
+    edge['speed'] = speed
 
 def time_with_turn_penalty(s,v,v_t,deceleration,acceleration,turn):
     if v >0:
