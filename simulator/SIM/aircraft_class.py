@@ -60,6 +60,7 @@ class aircraft:
         self.target_speeds = []
         self.was_just_handed_off = False
         self.spawntime = t
+        self.route = []
 
     def update(self,separation,v_max,t,dt):
         this_t_stop = 0
@@ -105,11 +106,12 @@ class aircraft:
         # print self.deceleration
 
         # 7. deceleration decision (based on target speeds)
-        self.deceleration_decision()
+        self.deceleration_decision(separation)
         # print self.deceleration
 
     def process_commands(self):
         if len(self.op)>0:
+            # print self.op.par
             self.stop = self.stop ^ (self.stop & 64)
             for command in self.op:
                 if command.status & 1 and not command.status & 2:                     # if command status = 'send'
@@ -134,7 +136,10 @@ class aircraft:
     def append_commands_to_target_speeds(self):
         for command in self.op:
             to_append = self.process_command(command)
-            self.target_speeds.append(to_append)
+            if to_append:
+                self.target_speeds.append(to_append)
+            else:
+                self.op.remove(command)
 
     def accelerate_to_v_max(self):
         acceleration = self.v_max-self.v
@@ -142,9 +147,10 @@ class aircraft:
             acceleration = self.comfort_acceleration
         self.deceleration = -acceleration
 
-    def deceleration_decision(self):
+    def deceleration_decision(self,separation):
         if self.stop:
             self.deceleration = self.max_deceleration
+            # self.stop_type_decision(separation)
         else:
             temp_deceleration = 0
 
@@ -159,6 +165,38 @@ class aircraft:
                     self.deceleration = temp_deceleration
                 else:
                     self.deceleration = self.max_deceleration
+
+    def stop_type_decision(self,separation):
+        # After handoff threshold
+        if self.stop & 1:
+            self.is_active = False
+        # after pre-handoff
+        if self.stop & 2:
+            self.deceleration = self.max_deceleration
+        # depreciated
+        if self.stop & 4:
+            self.deceleration = self.max_deceleration
+        # no successful path planned
+        if self.stop & 8:
+            self.deceleration = self.calc_acceleration(0, self.distance_to_atc-separation)
+        # runway busy
+        if self.stop & 16:
+            self.deceleration = self.calc_acceleration(0, self.distance_to_atc-separation)
+        # depreciated
+        if self.stop & 32:
+            self.deceleration = self.max_deceleration
+        # no Operation path planned
+        if self.stop & 64:
+            self.deceleration = self.calc_acceleration(0, self.distance_to_atc-separation)
+        # no path at pre-handoff
+        if self.stop & 128:
+            self.deceleration = self.max_deceleration
+        # unsolvable conflict
+        if self.stop & 256:
+            self.is_active = False
+        # Gate busy
+        if self.stop & 512:
+            self.is_active = False
 
     def check_if_ac_can_stop(self,distance,type):
         if distance >= self.stopping_distance(type):
@@ -186,6 +224,12 @@ class aircraft:
         return acceleration
 
     def process_handoff(self,next_atc,x_beg,y_beg,x_des,y_des):
+        # print len(self.route)>0,self.route[0],self.atc[0],self.route[1],next_atc
+        # if self.route[0] == False:
+        #     self.route = self.route[1:]
+        if len(self.route)>0 and int(self.route[0][0]) == self.atc[0] and int(self.route[1][0]) == next_atc:
+        # elif len(self.route)>0 and int(self.route[0][0]) == self.atc[0] and int(self.route[1][0]) == next_atc:
+            self.route = self.route[1:]
         self.target_speeds = []
         self.op = []
         self.par_avoid = {}
@@ -294,14 +338,14 @@ class aircraft:
             self.target_speeds.append({'v_target': v_target, 's_target': s_target})
         return conflict
 
-    #check if there are new commands given
-    def check_newcommands(self,v_max,dt):
-        # print len(self.op)
-        for command in self.op:
-            if command.status == 1:                     # if command status = 'send'
-                command.status = command.status + 2     # make command status = 'received'
-                to_append = self.process_command(command,v_max,dt)
-                self.target_speeds.append(to_append)  # process the given command
+    # #check if there are new commands given
+    # def check_newcommands(self,v_max,dt):
+    #     # print len(self.op)
+    #     for command in self.op:
+    #         if command.status == 1:                     # if command status = 'send'
+    #             command.status = command.status + 2     # make command status = 'received'
+    #             to_append = self.process_command(command,v_max,dt)
+    #             self.target_speeds.append(to_append)  # process the given command
 
     def cleanup_aircraft_accelerationtarget_speeds(self):
         current_array = []
@@ -321,7 +365,13 @@ class aircraft:
             # print 'S d: ',command.par['distance'],' v:',command.par['v_target']                           # if command is a speed command
             distance = command.par['distance']                  # distance at which speed should be changed (given in the command)
             v_target = command.par['v_target']                # commanded speed (not yet implemented)
-            return self.speed_command(distance,v_target)               # determine operation necessary for executing the command
+            return self.speed_command(distance,v_target)  # determine operation necessary for executing the command
+        elif command.type == 'route':
+            # Only accept routes to the destination as new route!
+            if self.atc_goal == command.par['route'][-1] or str(self.atc_goal) == command.par['route'][-1]:
+                self.route = command.par['route']
+            return False
+
 
     #determine operation for heading command
     def heading_command(self,distance,turn_angle):

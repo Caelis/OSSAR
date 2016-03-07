@@ -27,7 +27,7 @@ def map_initialization(wp_database):
     scr = pg.display.set_mode(reso)
     scrrect = scr.get_rect()
     scr.fill((2,255,70))
-    plane_pic= pg.image.load("blue-plane-hi.bmp")
+    plane_pic= pg.image.load("blue-plane-hi.png")
     # set waypoints
     X_waypoint = []
     Y_waypoint = []
@@ -57,7 +57,7 @@ def map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X
     if disp_link_density:
         for key,value in graph.adjacency_iter():
             for inner_key,inner_value in value.items():
-                density_string = str(inner_value['density'])
+                density_string = str(round(inner_value['weight'],2))
     
                 center_x = wp_database[key][1] + (wp_database[inner_key][1]-wp_database[key][1])/2
                 center_y = wp_database[key][2] + (wp_database[inner_key][2]-wp_database[key][2])/2
@@ -95,13 +95,14 @@ def map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X
             
             #diplay aircraft id
             if disp_aircaft_id:
-                # id_string = 'ID: ' + str(plane.id)
-                id_string = 'V: ' + str(round(plane.v/0.5144,1)) + ' A: ' + str(round(plane.deceleration,1))
+                id_string = 'ID: ' + str(plane.id)
+                # id_string = id_string + ' V: ' + str(round(plane.v/0.5144,1)) + ' A: ' + str(round(plane.deceleration,1))
                 # id_string = str(round(plane.v,1))
                 # id_string = 'C: ' + str(plane.conflict)
                 # id_string = 'R: ' + str(len(plane.radar))
                 # id_string = str(round(plane.distance_to_atc,1))
                 # id_string = 'Going from ' + str(plane.atc[0]) + ' to ' + str(plane.atc[1]) + ' dist: ' + str(round(plane.distance_to_atc,1))
+                id_string = id_string + str(plane.route)
                 if plane.conflict:
                     id_string = id_string + ' C: ' + str(plane.conflict)
 

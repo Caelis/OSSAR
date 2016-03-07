@@ -25,6 +25,7 @@ from command_class import *
 from data_import import wp_database
 from data_import import wpl_database
 from data_import import min_dec #minimum deceleration
+from dijkstra_structure import *
 #from collision_class import collision
 
 ##create instances
@@ -49,17 +50,19 @@ class ATC:
 
 
     # check if commands for the plane are necessary and update planned operation
-    def update(self,ATC_list,runway_list,v_max,graph,runway_occupance_time,dt,t):
+    def update(self,ATC_list,runway_list,v_max,graphDict,runway_occupance_time,dt,t,simulation_constants):
+        graph = graphDict['graph']
         ### radar (distance of aircraft from ATC)
         self.update_radar()
 
-        self.check_and_remove_impossible_conflict(graph)
+        self.check_and_remove_impossible_conflict(graphDict,simulation_constants)
 
         ### handoff decision && ### graph update
-        planes_taxi_time = self.handoff_decisions(ATC_list,graph,runway_list,runway_occupance_time,t)
+        planes_taxi_time = self.handoff_decisions(ATC_list,graphDict,runway_list,runway_occupance_time,t,simulation_constants)
 
         ### heading and speed commands
-        self.plan_operations(graph,t)
+        self.plan_operations(graphDict,t)
+
         return graph, planes_taxi_time
 
 ##############################
@@ -78,7 +81,7 @@ class ATC:
             aircraft.distance_to_atc = -aircraft.distance_to_atc
             # print('The distance is ' + str(aircraft.distance_to_atc) + '. We passed the ATC')
 
-    def check_and_remove_impossible_conflict(self, graph):
+    def check_and_remove_impossible_conflict(self, graphDict,simulation_constants):
         if self.type == 2:
             # with this function we check if there are unsolvable conflcits and reomove all aircraft that are part of the conflict.
             closest_incoming = {}
@@ -95,7 +98,7 @@ class ATC:
                     # print aircraft
                     aircraft.stop = aircraft.stop | 256
                     self.remove_plane(aircraft)
-                    self.decrease_graph_density(graph, aircraft.atc[0], self.id)
+                    self.decrease_graph_density(graphDict, aircraft.atc[0], self.id,simulation_constants)
                     aircraft.is_active = False
 
 ##############################
@@ -106,32 +109,39 @@ class ATC:
     #         if not aircraft.check_if_ac_can_stop(aircraft.distance_to_atc,'comfort'):
     #             self.pre_handoff_decision(aircraft,graph)
 
-    def pre_handoff_type_select(self,aircraft,graph):
+    def pre_handoff_type_select(self,aircraft,graphDict,simulation_constants):
         if self.type == 4:
             # print 'Handoff at Runway'
-            self.pre_handoff_runway(aircraft,graph)
+            self.pre_handoff_runway(aircraft,graphDict)
         elif self.type == 1:
-            self.pre_handoff_gate(aircraft,graph)
+            self.pre_handoff_gate(aircraft,graphDict)
         elif self.type == 2:
-            self.pre_handoff_intersection(aircraft,graph)
+            self.pre_handoff_intersection(aircraft,graphDict,simulation_constants)
         else:
             'THIS IS NOT SUPPOSED TO HAPPEN! EACH NODE MUST HAVE A TYPE!!!'
 
-    def pre_handoff_intersection(self,plane,graph):
-        plane.stop = plane.stop ^ (plane.stop & 2)
-        if plane.op[-1].par.has_key('next_atc'):
-            target_atc = plane.atc[1] # Where the plane is currently going to
-            next_atc = plane.op[-1].par['next_atc'] # where the plane is going to next
-            if graph.has_edge(target_atc,next_atc):
-                plane.ready_for_hand_off = True
-                self.increase_graph_density(graph,target_atc,next_atc)
-                plane.stop = plane.stop ^ (plane.stop & 2)
-                # print 'Pre Handoff successfull Plane ' + str(plane.id) + ' ATC: ' + str(self.id)
-            else:
-                plane.stop = plane.stop | 2
-                # print 'Emergency stop Plane ' + str(plane.id) + ' ATC: ' + str(self.id) + ' code: ' + str(plane.stop) + ' to: ' + str(plane.atc_goal)
+    def pre_handoff_intersection(self,plane,graphDict,simulation_constants):
+        graph = graphDict['graph']
+        if len(plane.op) > 0:
+            plane.stop = plane.stop ^ (plane.stop & 2)
+            if plane.op[-1].par.has_key('next_atc'):
+                target_atc = plane.atc[1] # Where the plane is currently going to
+                next_atc = plane.op[-1].par['next_atc'] # where the plane is going to next
+                if graph.has_edge(target_atc,next_atc):
+                    plane.ready_for_hand_off = True
+                    self.increase_graph_density(graphDict,target_atc,next_atc,simulation_constants)
+                    plane.stop = plane.stop ^ (plane.stop & 2)
+                    # print 'Pre Handoff successfull Plane ' + str(plane.id) + ' ATC: ' + str(self.id)
+                else:
+                    print 'No edge',target_atc,next_atc
+                    plane.stop = plane.stop | 2
+                    # print 'Emergency stop Plane ' + str(plane.id) + ' ATC: ' + str(self.id) + ' code: ' + str(plane.stop) + ' to: ' + str(plane.atc_goal)
 
+            else:
+                print 'No next ATC'
+                plane.stop = plane.stop | 2
         else:
+            print 'No op'
             plane.stop = plane.stop | 2
 
     def pre_handoff_gate(self,plane,graph):
@@ -159,36 +169,39 @@ class ATC:
 ##############################
 ## Hand-off
 ##############################
-    def handoff_decisions(self,ATC_list,graph,runway_list,runway_occupance_time,t):
+
+    def handoff_decisions(self,ATC_list,graphDict,runway_list,runway_occupance_time,t,simulation_constants):
         planes_taxi_time = []
         for aircraft in self.locp:
             # Pre-handoff decision
             if ((not aircraft.check_if_ac_can_stop(aircraft.distance_to_atc,'comfort')) or aircraft.stop & 16 or aircraft.stop & 2) and not aircraft.ready_for_hand_off:
-                self.pre_handoff_type_select(aircraft,graph)
+                self.pre_handoff_type_select(aircraft,graphDict,simulation_constants)
             # Handoff decision
             if aircraft.distance_to_atc <= 0 and not aircraft.handed_off and aircraft.ready_for_hand_off:
                 aircraft.ready_for_hand_off = False
                 aircraft.handed_off = True
                 # aircraft.stop = False
                 # print 'Handoff aircraft ' + str(aircraft.id)
-                plane_taxi_time = self.plane_handoff(aircraft,ATC_list,graph,runway_list,runway_occupance_time,t)
+
+                plane_taxi_time = self.plane_handoff(aircraft,ATC_list,graphDict,runway_list,runway_occupance_time,t,simulation_constants)
+
                 if plane_taxi_time: # plane_taxi_time is only True if the aircraft was handed of to a runway
                     planes_taxi_time.append(plane_taxi_time)
         return planes_taxi_time
 
-    def plane_handoff(self,plane,ATC_list,graph,runway_list,runway_occupance_time,t):
+    def plane_handoff(self,plane,ATC_list,graphDict,runway_list,runway_occupance_time,t,simulation_constants):
         plane_taxi_time = False
         if self.type == 4:
-            plane_taxi_time = self.plane_handoff_runway(plane,ATC_list,graph,runway_list,runway_occupance_time,t)
+            plane_taxi_time = self.plane_handoff_runway(plane,ATC_list,graphDict,runway_list,runway_occupance_time,t,simulation_constants)
         elif self.type == 1:
-            self.plane_handoff_gate(plane,ATC_list,graph)
+            self.plane_handoff_gate(plane,ATC_list,graphDict,simulation_constants)
         elif self.type == 2:
-            self.plane_handoff_intersection(plane,ATC_list,graph)
+            self.plane_handoff_intersection(plane,ATC_list,graphDict,simulation_constants)
         else:
             'THIS IS NOT SUPPOSED TO HAPPEN! EACH NODE MUST HAVE A TYPE!!!'
         return plane_taxi_time
 
-    def plane_handoff_runway(self,plane,ATC_list,graph,runway_list,runway_occupance_time,t):
+    def plane_handoff_runway(self,plane,ATC_list,graphDict,runway_list,runway_occupance_time,t,simulation_constants):
         source_atc = plane.atc[0] # Where the plane is coming from
         target_atc = plane.atc[1] # Where the plane is currently going to
         # make sure that AC in waiting list of runway
@@ -201,7 +214,7 @@ class ATC:
             self.runway.reset_occupance()       # reset occupancy time
             # ATC_list[plane.atc[1]].remove_plane(plane)  # remove plane from ATC
             self.runway.waiting_list.remove(plane.id)         # remove plane from waiting_list
-            self.decrease_graph_density(graph,source_atc,target_atc)
+            self.decrease_graph_density(graphDict,source_atc,target_atc,simulation_constants)
             plane.is_active = False
 
             #calculate the taxi time
@@ -213,7 +226,8 @@ class ATC:
             print 'BIG problem!!!'
         return plane_taxi_time
 
-    def plane_handoff_intersection(self,plane,ATC_list,graph):
+    def plane_handoff_intersection(self,plane,ATC_list,graphDict,simulation_constants):
+        graph = graphDict['graph']
         ## Define the ATCs
         source_atc = plane.atc[0] # Where the plane is coming from
         target_atc = plane.atc[1] # Where the plane is currently going to
@@ -221,8 +235,9 @@ class ATC:
         if graph.has_edge(source_atc,target_atc):
             plane.stop = plane.stop ^ (plane.stop & 1)
             ## update graph density
-            self.decrease_graph_density(graph,source_atc,target_atc)
+            self.decrease_graph_density(graphDict,source_atc,target_atc,simulation_constants)
             ## process the aircraft handoff
+            # print 'next at handoff:',next_atc
             plane.process_handoff(next_atc,float(wp_database[self.id][1]), float(wp_database[self.id][2]), float(wp_database[next_atc][1]), float(wp_database[next_atc][2]))
             ## update plane -> atc assignment
             ATC_list[next_atc].add_plane(plane) # add to next ATC
@@ -230,20 +245,28 @@ class ATC:
         else:
             plane.stop = plane.stop | 1
 
-    def plane_handoff_gate(self,plane,ATC_list,graph):
-        success, path = self.get_path(graph,self.id,plane.atc_goal)
+    def plane_handoff_gate(self,plane,ATC_list,graphDict,simulation_constants):
+        # graph = graphDict['graph']
+        graph = graphDict['graph']
+        target_atc = plane.atc[1] # Where the plane is currently going to
+        # success, path = self.get_path(graph,self.id,plane.atc_goal,plane.route)
+        success, path = self.get_path(graph,self.id,plane.atc_goal,plane.route)
+        # print path
         if success:
-            target_atc = plane.atc[1] # Where the plane is currently going to
             next_atc = path[1]
+            # next_atc = int(path[1][0])
+            # plane.route = [False] + path
+        else:
+            next_atc = self.link[0][1]
 
-            ## update graph density
-            self.increase_graph_density(graph,self.id,next_atc)
+        ## update graph density
+        self.increase_graph_density(graphDict,self.id,next_atc,simulation_constants)
 
-            ## update plane -> atc assignment
-            # ATC_list[next_atc].calculate_aircraft_atc_distance(plane)
-            ATC_list[next_atc].add_plane(plane) # add to next ATC
-            self.remove_plane(plane)
-            plane.process_handoff(next_atc,float(wp_database[target_atc][1]),float(wp_database[target_atc][2]),float(wp_database[next_atc][1]),float(wp_database[next_atc][2]))
+        ## update plane -> atc assignment
+        # ATC_list[next_atc].calculate_aircraft_atc_distance(plane)
+        ATC_list[next_atc].add_plane(plane) # add to next ATC
+        self.remove_plane(plane)
+        plane.process_handoff(next_atc,float(wp_database[target_atc][1]),float(wp_database[target_atc][2]),float(wp_database[next_atc][1]),float(wp_database[next_atc][2]))
 
 
         # Set values of plane for next link
@@ -252,9 +275,21 @@ class ATC:
 ##############################
 ## Decision making
 ##############################
-    def get_path(self,graph,origin,destination):
+    def get_path(self,graph,origin,destination,route):
         success, path = dijkstra_path(graph,origin,destination)
+        if not success:
+            if not isinstance(route, list):
+                print '####### This is not a list:',route
+                route = [route]
+            if len(route)>0:
+                destination = route[-1]
+                cutRoute = route[0:-1]
+                # if not origin == destination:
+                success, path = self.get_path(graph,origin,destination,cutRoute)
+                # elif not len(route)>1:
+                #     print '### The route was too short:',len(route)
         return success,path
+
 
 
 ##############################
@@ -282,41 +317,110 @@ class ATC:
 ##############################
 ## Graph handling functions
 ##############################
-    def increase_graph_density(self,graph,source,target):
-        graph[source][target]['density'] += 1
-        # print 'Density now is ' + str(graph[source][target]['density'])
-        if graph[source][target]['density'] > 0:
+    def increase_graph_density(self,graphDict,source,target,simulation_constants):
+        graph = graphDict['graph']
+        dummyGraph = graphDict['dummyGraph']
+        if graph[source][target]['density'] == 0:
+            # first remove linked edges
+            for edge in graph[target][source]['linked_edges']:
+                dummyGraph.remove_edges_from([(edge[0],edge[1])])
+                # print 'removed the edge',edge,':',dummyGraph[edge[0]]
             # print 'edge removed'
             graph.remove_edges_from([(target,source)])
+        graph[source][target]['density'] += 1
+        calculate_edge_values(graph[source][target],simulation_constants)
+        #also update density of linked edges
+        for edge in graph[source][target]['linked_edges']:
+            # print 'Edge:',edge
+            # print 'From:',dummyGraph[edge[0]]
+            # print 'From/to:',dummyGraph[edge[0]][edge[1]]
+            dummyGraph[edge[0]][edge[1]]['density'] = graph[source][target]['density']
+            calculate_edge_values(dummyGraph[edge[0]][edge[1]],simulation_constants)
+        # print 'Density now is ' + str(graph[source][target]['density'])
 
-    def decrease_graph_density(self,graph,source,target):
-        # print 'Plane ' + str(plane.id) + ' removed from link ' + str(source_atc) + '->' + str(target_atc)
+    def decrease_graph_density(self,graphDict,source,target,simulation_constants):
+        graph = graphDict['graph']
+        dummyGraph = graphDict['dummyGraph']
+        # print 'removed from link ' + str(source) + '->' + str(target)
         # update the density on the graph
         graph[source][target]['density'] -= 1
+        calculate_edge_values(graph[source][target],simulation_constants)
+        for edge in graph[source][target]['linked_edges']:
+            dummyGraph[edge[0]][edge[1]]['density'] = graph[source][target]['density']
+            calculate_edge_values(dummyGraph[edge[0]][edge[1]],simulation_constants)
+
         # if the no more planes on this link, add link in the other direction
         if graph[source][target]['density'] == 0:
             # print 'edge added from ' + str(target) + ' to ' + str(source)
-            self.add_edge_back_to_graph(graph,target,source)
+            self.add_edge_back_to_graph(graphDict,target,source)
 
-    def add_edge_back_to_graph(self,graph,source,target):
-        distance = hypot((wp_database[source][1]-wp_database[target][1]),(wp_database[source][2]-wp_database[target][2]))
-        value =  distance / 30*0.5144 #TODO replace 30 with v_max
-        graph.add_weighted_edges_from([(source,target,value)])
-        graph[source][target]['distance']=distance
-        graph[source][target]['density']=0
+    def calculate_edge_values(self,edge,simulation_constants):
+        # get simulation constants
+        separation = simulation_constants['separation']
+        v_max = simulation_constants['v_max']
+        v_turn = simulation_constants['v_turn']
+        dec_standard = simulation_constants['dec_standard']
+        acc_standard = simulation_constants['acc_standard']
+        flowTheory_cutoff = simulation_constants['flowTheory_cutoff']
+
+        # get static edge values
+        density = edge['density']
+        distance = edge['distance']
+
+        # calculate dynamic edge values
+        max_density = distance / separation
+
+        ## Calculate the speeds based on density
+        if density > max_density:
+            speed = 0
+        elif density < flowTheory_cutoff * max_density: # 0.5 * max_density:  # TODO make the the 0.5 a variable that is set up in the simulator setup
+            speed = v_max
+        else:
+            if density > 0:
+                speed = v_max * (1 - (density / max_density))
+            else:
+                speed = v_max
+
+        # Calculate the (graph weight = time_value) based on the speed and distance
+        if speed > 0:
+            time_value = distance / speed  # TODO this is NOT our optimal soultion!  BALANCING DILEMMA
+        else:
+            time_value = float('Inf')
+
+        time_for_link = time_with_turn_penalty(distance,speed,v_turn,dec_standard,acc_standard,edge['turn'])
+
+        edge['weight'] = time_for_link
+        edge['speed'] = speed
+
+
+    def add_edge_back_to_graph(self,graphDict,source,target):
+        graph = graphDict['graph']
+        graphOrig = graphDict['graphOrig']
+        dummyGraph = graphDict['dummyGraph']
+        dummyGraphOrig = graphDict['dummyGraphOrig']
+        graph.add_edge(source,target)
+        graph[source][target] = graphOrig[source][target]
+        for edge in graph[source][target]['linked_edges']:
+            dummyGraph.add_edge(edge[0],edge[1])
+            dummyGraph[edge[0]][edge[1]] = dummyGraphOrig[edge[0]][edge[1]]
+        # distance = hypot((wp_database[source][1]-wp_database[target][1]),(wp_database[source][2]-wp_database[target][2]))
+        # value =  distance / 30*0.5144 #TODO replace 30 with v_max
+        # graph.add_weighted_edges_from([(source,target,value)])
+        # graph[source][target]['distance']=distance
+        # graph[source][target]['density']=0
 
 ##############################
 ## Command functions
 ##############################
     #check if a plane needs a command
-    def plan_operations(self,graph,t):
+    def plan_operations(self,graphDict,t):
         for plane in self.locp:
             if not plane.ready_for_hand_off: # once the aircraft has crossed the "pre handoff threshold", don't change the operations any more
-                self.plan_operation(plane,graph,t)
+                self.plan_operation(plane,graphDict,t)
 
-    def plan_operation(self,plane,graph,t):
-        tempGraph = graph
-        tempGraph.remove_edges_from([(plane.atc[1],plane.atc[0])])
+    def plan_operation(self,plane,graphDict,t):
+        tempGraph = graphDict['dummyGraph']
+        # tempGraph.remove_edges_from([(plane.atc[1],plane.atc[0])])
         if self.type == 1:
             self.plan_operation_gate(tempGraph,plane,t)
         elif self.type == 2:
@@ -327,24 +431,30 @@ class ATC:
             'THIS IS NOT SUPPOSED TO HAPPEN! EACH PLANE MUST HAVE AN ATC!!!'
 
     def plan_operation_gate(self,graph,plane,t):
-        success, path = self.get_path(graph,self.id,plane.atc_goal)
+        # success, path = self.get_path(graph,self.id,plane.atc_goal,plane.route)
+        success, path = self.get_path(graph,str(self.id),str(plane.atc_goal),plane.route)
         if success:
             plane.stop = plane.stop ^ (plane.stop & 8)
-            next_atc = path[1] #selects the next atc
+            next_atc = int(path[1].split('_')[0]) #selects the next atc
+            # a.split('_')[0]
             # calculate new heading
             turn_angle = self.calculate_heading_change(plane,next_atc)
             self.set_operation_parameters(plane,next_atc,turn_angle,t)
+            # self.send_route_to_plane(plane,path,t)
         else:
             plane.stop = plane.stop | 8
     
     def plan_operation_intersection(self,graph,plane,t):
-        success, path = self.get_path(graph,self.id,plane.atc_goal)
-        if success:
+        # success, path = self.get_path(graph,self.id,plane.atc_goal,plane.route)
+        success, path = self.get_path(graph,str(self.id),str(plane.atc_goal),plane.route)
+        if success and len(path)>1:
+            # print 'Route:',plane.route[0],str(plane.atc_goal)
             plane.stop = plane.stop ^ (plane.stop & 8)
-            next_atc = path[1] #selects the next atc
+            next_atc = int(path[1].split('_')[0]) #selects the next atc
             # calculate new heading
             turn_angle = self.calculate_heading_change(plane,next_atc) 
             self.set_operation_parameters(plane,next_atc,turn_angle,t)
+            self.send_route_to_plane(plane,path,t)
         else:
             plane.stop = plane.stop | 8
 
@@ -364,6 +474,16 @@ class ATC:
         # send command to plane
         plane_command = command(command_type, self.id, plane.id, t, 1, par) #1 = send
         plane.op.append(plane_command)
+
+    def send_route_to_plane(self,plane,route,t):
+        par = {}
+        command_type = 'route'
+        par['route'] = route
+        # send command to plane
+        plane_command = command(command_type, self.id, plane.id, t, 1, par) #1 = send
+        plane.op.append(plane_command)
+        # for thisCommand in plane.op:
+        #     print thisCommand.type,thisCommand.par
 
     def remove_plane(self,plane):
         self.locp.remove(plane)
