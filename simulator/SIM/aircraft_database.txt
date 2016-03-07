@@ -1,2 +1,2 @@
-NAME,SPEED,RANGE
-A320 240.0 5700000
+Type	name	turnspeed	decc	acc
+0	A320	10		2	2

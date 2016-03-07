@@ -1,0 +1,2 @@
+type	max speed	time	
+0	30		0
