@@ -9,12 +9,14 @@ Output:
 
 import numpy as np
 
-def simulator_stop_criteria(v_average_list,stop_type_list,trial,min_num_trials,marge,Za):
+def simulator_stop_criteria(v_average_list,taxi_time_average_list,n_stop_list,stop_type_list,trial,min_num_trials,marge,Za):
     stop_criteria = []
     looping = True
 
     if len(v_average_list) >= min_num_trials: # This loop determines when the simulator should stop running.
-        stop_criteria = check_average_speed(v_average_list,stop_criteria,trial,marge,Za,min_num_trials) #determine if avarge speeds are reliable
+        stop_criteria = check_vector(v_average_list,stop_criteria,trial,marge,Za,min_num_trials) #determine if avarge speeds are reliable
+        stop_criteria = check_vector(taxi_time_average_list,stop_criteria,trial,marge,Za,min_num_trials) #determine if avarge speeds are reliable
+        stop_criteria = check_vector(n_stop_list,stop_criteria,trial,marge,Za,min_num_trials) #determine if avarge speeds are reliable
         stop_criteria = check_plane_stop(stop_type_list,stop_criteria,trial,marge,Za,min_num_trials)
 
     #check if all stop criteria are true, if yes stop simulator, else continue
@@ -28,17 +30,17 @@ def simulator_stop_criteria(v_average_list,stop_type_list,trial,min_num_trials,m
     return looping
 
 #Checks if the average speeds are within the confidence interval
-def check_average_speed(v_average_list, stop_criteria, trial, marge, Za, min_num_before_filter):
-    this_v_average_list = np.array(v_average_list)
+def check_vector(this_list, stop_criteria, trial, marge, Za, min_num_before_filter):
+    this_list_np = np.array(this_list)
 
 
-    filtered_list = reject_outliers(this_v_average_list)
+    filtered_list = reject_outliers(this_list_np)
 
     if filtered_list.size>min_num_before_filter:
-        this_v_average_list = filtered_list
+        this_list_np = filtered_list
 
-    mean_v_average = np.mean(this_v_average_list)
-    std_v_average = np.std(this_v_average_list, ddof = 1)
+    mean_v_average = np.mean(this_list_np)
+    std_v_average = np.std(this_list_np, ddof = 1)
 
     ### HEIKO
     if abs(mean_v_average) < 1:

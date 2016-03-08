@@ -165,7 +165,7 @@ def update_dijsktra(ATC_list, graph, graphDummy, seperation, default_values):  #
             # Calculate the speeds based on density
             if density > max_density:
                 speed = 0
-            elif density < 0.5 * max_density: # 0.5 * max_density:  # TODO make the the 0.5 a variable that is set up in the simulator setup
+            elif density < default_values['flowTheory_cutoff'] * max_density: # 0.5 * max_density:  # TODO make the the 0.5 a variable that is set up in the simulator setup
                 speed = v_max
             else:
                 if density > 0:
