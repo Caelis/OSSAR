@@ -114,15 +114,21 @@ def create_aircraft(idnumber,ATC_list,aircraft_list,runway_list,r,v_max,graphDic
 
 #loops through all ATC and appends a
 def update_all_ATC(ATC_list,runway_list,graphDict,radar_range,runway_occupance_time,dt,t,v_max,simulation_constants):
+    # get the graph we need
     graph = graphDict['graph']
+
+    # initialize return variable
+    plane_taxi_time = []
+
     ## each atc
     for atc in ATC_list:
         ### radar (distance of aircraft from ATC)
         ### handoff decision
         ### graph update
         ### heading and speed commands
-        graph,plane_taxi_time = atc.update(ATC_list,runway_list,v_max,graphDict,runway_occupance_time,dt,t,simulation_constants) # check if commands for the plane are necessary and plan operation
+        graph,plane_taxi_time_one = atc.update(ATC_list,runway_list,v_max,graphDict,runway_occupance_time,dt,t,simulation_constants) # check if commands for the plane are necessary and plan operation
         # aircraft_radar_list(atc)    # check for each aircraft which other plane are within a certain(radar) range
+        plane_taxi_time = plane_taxi_time + plane_taxi_time_one
     return graph,plane_taxi_time
 
 #check for each aircraft which other aircraft are within radar range
@@ -151,14 +157,15 @@ def update_aircraft(aircraft_list,plane_speed,t_stop_total,dt,separation,v_max,r
         t_stop_total = t_stop_total + this_stop_time
     return t_stop_total, plane_speed
 
-def update_all_aircraft_position(aircraft_list,aircraft_accelerating,dt):
+def update_all_aircraft_position(aircraft_list,dt):
+    aircraft_accelerating = 0
     for thisAircraft in aircraft_list:
         # if thisAircraft.stop & 8:
         #     # print str(thisAircraft.id) + ' is stopped with: ' + str(thisAircraft.stop)
         #     print str(thisAircraft.id) + ' from: ' + str(thisAircraft.atc[0]) + ' to: ' + str(thisAircraft.atc_goal)
         # thisAircraft.update_speed(dt)
         # thisAircraft.update_pos(dt)
-        aircraft_accelerating = thisAircraft.update_pos_speed(aircraft_accelerating,dt)
+        aircraft_accelerating = aircraft_accelerating + thisAircraft.update_pos_speed(dt)
     return aircraft_accelerating
 
 def update_all_aircraft_radar(plane_list,radar_range):

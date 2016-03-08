@@ -25,7 +25,16 @@ import copy
 #import data
 from data_import import wpl_database
 from data_export import *
-def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
+def simrun(sim_params):
+    t_sim = sim_params['t_sim']
+    area = sim_params['area']
+    dt = sim_params['dt']
+    Map = sim_params['Map']
+    n_prop = sim_params['n_prop']
+    runway_throughput = sim_params['runway_throughput']
+    spawnrate = sim_params['spawnrate']
+
+
     #initializing values
     idnumber = 0
     idnumber_rw = 0
@@ -57,7 +66,7 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
     simulation_constants['acc_standard'] = 0.8
     simulation_constants['dec_standard'] = -2
     simulation_constants['separation'] = separation
-    simulation_constants['flowTheory_cutoff'] = 0.5
+    simulation_constants['flowTheory_cutoff'] = 0.1
     
     #initiating the simulator
     if Map == True:
@@ -119,12 +128,13 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
         update_runway(runway_list,runway_occupance_time,ATC_list,dt)
 
         # update plane positions
-        aircraft_accelerating = update_all_aircraft_position(aircraft_list,aircraft_accelerating,dt)
+        aircraft_accelerating_this_step = update_all_aircraft_position(aircraft_list,dt)
 
         # update ATC (decision making here)
 
         # taxiwayGraph,planes_taxi_time = update_all_ATC(ATC_list,runway_list,taxiwayGraph,radar_range,runway_occupance_time,dt,t,v_max)
-        taxiwayGraph,planes_taxi_time = update_all_ATC(ATC_list,runway_list,graphDict,radar_range,runway_occupance_time,dt,t,v_max,simulation_constants)
+        taxiwayGraph,planes_taxi_time_this_step = update_all_ATC(ATC_list,runway_list,graphDict,radar_range,runway_occupance_time,dt,t,v_max,simulation_constants)
+
 
         # update aircraft (decision making)
         t_stop_total,plane_speed = update_aircraft(aircraft_list,plane_speed,t_stop_total,dt,separation,v_max,radar_range,t)
@@ -142,7 +152,12 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
         collect_data(position_array,'aircraft_position',aircraft_list,t)
 
         collect_data(edges_array,'edge_values',taxiwayGraph,t)
-        taxi_times.append(planes_taxi_time)
+
+        taxi_times = taxi_times + planes_taxi_time_this_step
+
+        aircraft_accelerating = aircraft_accelerating + aircraft_accelerating_this_step
+        # print 'Taxi times:',taxi_times
+        # print 'Aircraft stops:',aircraft_accelerating
         # collect_data(edges_array,'edge_values',taxiwayGraph,t)
 
         # remove aircraft that took off
@@ -153,6 +168,7 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
         #if True, run map
         if Map == True:
             running = map_running(reso,scr,scrrect,plane_pic,piclist,ATC_list,rectlist,running,r,X_waypoint,Y_waypoint,wp_database,wpl_database, graphDict['graph'])
+
         if t>= t_sim:
             running = False
 
@@ -163,5 +179,5 @@ def simrun(t_sim,area,dt,Map,n_prop,runway_throughput,spawnrate):
         pg.quit()
 
     v_average = sum(plane_speed)/len(plane_speed)
-    taxi_time_average = sum(taxi_times)/len(taxi_times)
+    taxi_time_average = 1.0*sum(taxi_times)/len(taxi_times)
     return throughput,t_stop_total,v_average,position_array,edges_array,aircraft_accelerating,taxi_time_average

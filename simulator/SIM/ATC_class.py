@@ -133,7 +133,7 @@ class ATC:
                     plane.stop = plane.stop ^ (plane.stop & 2)
                     # print 'Pre Handoff successfull Plane ' + str(plane.id) + ' ATC: ' + str(self.id)
                 else:
-                    print 'No edge',target_atc,next_atc
+                    # print 'No edge',target_atc,next_atc
                     plane.stop = plane.stop | 2
                     # print 'Emergency stop Plane ' + str(plane.id) + ' ATC: ' + str(self.id) + ' code: ' + str(plane.stop) + ' to: ' + str(plane.atc_goal)
 

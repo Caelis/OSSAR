@@ -441,7 +441,7 @@ class aircraft:
         for speed_command in self.target_speeds:
             speed_command['s_target'] = speed_command['s_target']-self.last_distance_travelled
 
-    def update_pos_speed(self,aircraft_accelerating,dt):
+    def update_pos_speed(self,dt):
         # self.v = self.v - (dt*self.deceleration)
         if self.heading == False or self.heading == None: #if no heading given, determine heading
             self.update_heading()
@@ -471,5 +471,7 @@ class aircraft:
         
         # tracks how many aircraft during the simulation accelerate from full stop
         if v_old == 0 and self.v > 0:
-            aircraft_accelerating = aircraft_accelerating + 1
+            aircraft_accelerating =  1
+        else:
+            aircraft_accelerating =  0
         return aircraft_accelerating
