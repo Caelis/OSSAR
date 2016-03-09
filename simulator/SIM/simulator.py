@@ -110,6 +110,7 @@ def simrun(sim_params):
     # perpare for export
     position_array = []
     edges_array = []
+    flights_array = []
     while running == True:
         # for key, value in taxiwayGraphDummy.adjacency_iter():
         #     # print key
@@ -145,7 +146,7 @@ def simrun(sim_params):
         ### heading decision
 
         # add aircraft
-        t_next_aircraft, create, idnumber = aircraft_interval(t_next_aircraft,idnumber,ATC_list,aircraft_list,runway_list,r,v_max,create,mean,std,graphDict,separation,t,dt)
+        t_next_aircraft, create, idnumber = aircraft_interval(t_next_aircraft,idnumber,ATC_list,aircraft_list,flights_array,runway_list,r,v_max,create,mean,std,graphDict,separation,t,dt)
 
         # idnumber = add_random_aircraft_at_rate(spawnrate,idnumber,ATC_list,aircraft_list,runway_list,r,v_max,taxiwayGraph,t,dt)
         # store aircraft position before removing inactive aircraft
@@ -180,4 +181,4 @@ def simrun(sim_params):
 
     v_average = sum(plane_speed)/len(plane_speed)
     taxi_time_average = 1.0*sum(taxi_times)/len(taxi_times)
-    return throughput,t_stop_total,v_average,position_array,edges_array,aircraft_accelerating,taxi_time_average
+    return throughput,t_stop_total,v_average,position_array,edges_array,flights_array,aircraft_accelerating,taxi_time_average

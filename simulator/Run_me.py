@@ -23,7 +23,7 @@ from SIM.simulator_stop_criteria import *
 from SIM.process_results import *
 
 '''Configuring the simulator'''
-Map = True# Activate or deactivate the map
+Map = False# Activate or deactivate the map
 runs = 1                # number of runs
 # spawnrate = [1,20,40,60,80,100,120,140,160,180,200,220,240]       # rate [aircraft/hour] at which aircraft are added
 spawnrate = [60]
@@ -32,10 +32,10 @@ spawnrate = [60]
 
 n_prop = [0]            # degree of propagation
 t_simulated = 3600      # simulation time [s]
-dt = 0.5               # timestep [s]
+dt = 0.9              # timestep [s]
 runway_throughput = 120 # rate[aircraft/hour] at which aircraft can take-off/land
-min_num_trials = 1    # minimum number of trial runs
-max_num_trials = 1
+min_num_trials = 3    # minimum number of trial runs
+max_num_trials = 4
 
 area = 30               # airspace area
 marge = 0.1             # stop criteria for accuracy purposes
@@ -79,7 +79,7 @@ for i in range(len(spawnrate)):
 
             # TODO best to parallelize here?
 #            simrun(t_simulated,area,dt,Map,n_prop)
-            throughput,t_stop_total,v_average,position_array,edge_array,aircraft_accelerating,taxi_time_average = simrun(sim_params)
+            throughput,t_stop_total,v_average,position_array,edge_array,flights_array,aircraft_accelerating,taxi_time_average = simrun(sim_params)
 
 #            throughput_list.append(throughput)
 #            t_stop_total_list.append(t_stop_total)
@@ -93,10 +93,13 @@ for i in range(len(spawnrate)):
             ############
             ## Write position data
             ############
-            filename_aircraft_pos = 'aircraftPos_' + str(spawnrate[i]) + '_' + str(trial) + '.csv'
+            # filename_aircraft_pos = 'aircraftPos_' + str(spawnrate[i]) + '_' + str(trial) + '.csv'
+            filename_flights = 'flights_' + str(spawnrate[i]) + '_' + str(trial) + '.csv'
             # filename_edge_value = 'edgeValue_' + str(spawnrate[i]) + '_' + str(trial) + '.csv'
-            write_data(filename_aircraft_pos,position_array)
+            # write_data(filename_aircraft_pos,position_array)
+            write_data(filename_flights,flights_array)
             # write_data(filename_edge_value,edge_array)
+
 
             # append data of this run to measurements
             position_array = np.matrix(position_array)
