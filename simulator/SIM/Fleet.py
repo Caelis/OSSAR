@@ -25,9 +25,9 @@ from data_import import rw_database
 from data_import import data
 
 #Uses a normal distribution to determine when the next aircaft will arrive
-def aircraft_interval(t_next_aircraft,idnumber,ATC_list,aircraft_list,runway_list,r,v_max,create,mean,std,graphDict,min_separation,t,dt):
+def aircraft_interval(t_next_aircraft,idnumber,ATC_list,aircraft_list,flight_array,runway_list,r,v_max,create,mean,std,graphDict,min_separation,t,dt):
     if create == True:
-        idnumber = create_aircraft(idnumber,ATC_list,aircraft_list,runway_list,r,v_max,graphDict,min_separation,t,dt)
+        idnumber = create_aircraft(idnumber,ATC_list,aircraft_list,flight_array,runway_list,r,v_max,graphDict,min_separation,t,dt)
         t_next_aircraft = t + np.random.normal(mean,std)
         create = False
     if create == False:
@@ -66,10 +66,12 @@ def check_if_gate_available(min_separaion,ATC_list,ATC_gate,graphDict):
         # print link_distance,' - ',closest_ac_pos,'(',ATC_list[target].locp[-1].id,') = ',distance_closets_aircraft
         return False
 
-def create_aircraft(idnumber,ATC_list,aircraft_list,runway_list,r,v_max,graphDict,min_separation,t,dt): #creates aircraft when nessecary
+def create_aircraft(idnumber,ATC_list,aircraft_list,flight_array,runway_list,r,v_max,graphDict,min_separation,t,dt): #creates aircraft when nessecary
     # select origin and destination
     ATC_gate = int(rnd.choice(g_database))              # Random select a departure gate of the aircraft
     ATC_runway = int(rnd.choice(rw_database))           # Random select a runway entrance of the aircraft
+
+    flight_array.append([idnumber,round(t,2),ATC_gate,ATC_runway])
 
     gate_available = check_if_gate_available(min_separation,ATC_list,ATC_gate,graphDict)
 
