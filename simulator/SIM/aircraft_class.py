@@ -276,12 +276,12 @@ class aircraft:
             if plane_separation < (min_separation-25):
                 conflict = True                                                         # plane is following and seperation lost --> conflict = True
                 v_target = 0                                                      # determine target speed (almost zero to regain seperation if necessary)
-                s_target = 0.00001                                                   # determine target distance (almost zero, since direct action)
+                s_target = 0                                                  # determine target distance (almost zero, since direct action)
                 self.target_speeds.append({'v_target': v_target, 's_target': s_target})
             elif plane_separation < min_separation:           # check if seperation is lost
                 conflict = True                                                         # plane is following and seperation lost --> conflict = True
                 v_target = plane.v                                                      # determine target speed (almost zero to regain seperation if necessary)
-                s_target = 0.00001                                                   # determine target distance (almost zero, since direct action)
+                s_target = 0                                                  # determine target distance (almost zero, since direct action)
                 self.target_speeds.append({'v_target': v_target, 's_target': s_target})
         else:
             conflict = False
@@ -327,13 +327,13 @@ class aircraft:
                 dist_sep = min_separation - plane_dist #distance at which to brake at current link to remain seperation on next link
                 s_target = self_dist - (dist_sep + dcc_dist)
                 if s_target <= 0:
-                    s_target = 0.00001
+                    s_target = 0
             else:
                 conflict = True
                 dist_sep = plane_dist - min_separation
                 s_target = (self_dist + plane_dist) - (dcc_dist + min_separation)
                 if s_target <= 0:
-                    s_target = 0.0001
+                    s_target = 0
             v_target = plane.v
             self.target_speeds.append({'v_target': v_target, 's_target': s_target})
         return conflict
