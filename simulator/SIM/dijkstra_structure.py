@@ -51,12 +51,11 @@ def initiate_dijkstra(v_max):
     dijk = nx.DiGraph(dijk)
     return dijk
 
-
 def calc_heading(x_1,y_1,x_2,y_2):
     heading = atan2((y_2-y_1), (x_2-x_1))
     return heading
 
-def add_dummy_edges(graph,atc_list, default_values):
+def add_dummy_edges(graph, waypoint_db, default_values):
     # TODO add original nodes as well, and connect to all possible connections
     v_turn = default_values['v_turn']
     acc_standard = default_values['acc_standard']
@@ -112,7 +111,7 @@ def add_dummy_edges(graph,atc_list, default_values):
 
                     # don't add edges towards gates, or from runways
                     # TODO this is a temorary fix for the issue that paths were assigned through gates/through runways. This won't work for mixed arr/dep traffic
-                    if not (atc_list[inner_key].type == 1 or atc_list[key].type == 4):
+                    if not (waypoint_db[inner_key][3] == 1 or waypoint_db[key][3] == 4):
                         # add virtual edge if necessary
                         if not largeGraph.has_edge(node_label_1,node_label_2):
                             largeGraph.add_edge(node_label_1,node_label_2)
@@ -156,8 +155,6 @@ def update_dijsktra(ATC_list, graph, graphDummy, seperation, default_values):  #
     v_max = default_values['v_max']
     for key, value in graph.adjacency_iter():
         for inner_key, inner_value in value.items():
-            # print 'Inner:',inner_value
-            # Get the current density and distance of each link(key, inner_key)
             density = inner_value['density']
             distance = inner_value['distance']
             max_density = distance / seperation
@@ -261,7 +258,3 @@ def time_with_turn_penalty(s,v,v_t,deceleration,acceleration,turn):
             return s/v
     else:
         return float('inf')
-
-
-
-
