@@ -13,7 +13,6 @@ Sim_type = '1wpbeg-end-comb'
 
 #import python modules
 import os
-import multiprocessing
 # import numpy as np
 # import scipy.stats as stats
 # import matplotlib.pyplot as plt
@@ -26,27 +25,17 @@ from SIM.process_results import *
 Map = False# Activate or deactivate the map
 runs = 1                # number of runs
 # spawnrate = [1,20,40,60,80,100,120,140,160,180,200,220,240]       # rate [aircraft/hour] at which aircraft are added
-spawnrate = [60]
-# spawnrate = [126]
-# spawnrate = [100]       # rate [aircraft/hour] at which aircraft are added
-
+spawnrate = [1]
 n_prop = [0]            # degree of propagation
 t_simulated = 3600      # simulation time [s]
-dt = 0.9              # timestep [s]
+dt = 0.5              # timestep [s]
 runway_throughput = 120 # rate[aircraft/hour] at which aircraft can take-off/land
-min_num_trials = 3    # minimum number of trial runs
-max_num_trials = 4
+min_num_trials = 100    # minimum number of trial runs
+max_num_trials = 500
 
 area = 30               # airspace area
 marge = 0.1             # stop criteria for accuracy purposes
 Za = 1.96               # stop criteria for accuracy purposes
-
-
-# # what files to save
-# save_parameters = {}
-# save_parameters['averages'] = True
-# save_parameters['position'] = True
-# save_parameters['edges'] = True
 
 sim_params = {}
 sim_params['t_sim'] = t_simulated
@@ -57,7 +46,7 @@ sim_params['n_prop'] = n_prop
 sim_params['runway_throughput'] = runway_throughput
 sim_params['flowTheory_cutoff'] = 0.5
 
-# TODO otherwise parallelize here!
+
 for i in range(len(spawnrate)):
     throughput_list = []        # measurements
     t_stop_total_list = []      # measurements
@@ -77,15 +66,7 @@ for i in range(len(spawnrate)):
             print spawnrate[i]
             sim_params['spawnrate'] = spawnrate[i]
 
-            # TODO best to parallelize here?
-#            simrun(t_simulated,area,dt,Map,n_prop)
             throughput,t_stop_total,v_average,position_array,edge_array,flights_array,aircraft_accelerating,taxi_time_average = simrun(sim_params)
-
-#            throughput_list.append(throughput)
-#            t_stop_total_list.append(t_stop_total)
-#            v_average_list.append(v_average)
-
-
 
             trial = trial + 1
             print "run",trial," finished..."
@@ -99,7 +80,6 @@ for i in range(len(spawnrate)):
             # write_data(filename_aircraft_pos,position_array)
             write_data(filename_flights,flights_array)
             # write_data(filename_edge_value,edge_array)
-
 
             # append data of this run to measurements
             position_array = np.matrix(position_array)
@@ -115,15 +95,10 @@ for i in range(len(spawnrate)):
                 looping = False
 
             filename_averages = 'averages_' + str(spawnrate[i]) + '.csv'
-
-            # print v_average
-            # print v_average_list
             averages_data = {}
             averages_data['speed'] = v_average_list
             averages_data['stop_types'] = stop_type_list
             averages_data['plane_stops'] = n_stop_list
             averages_data['avg_taxi_time'] = taxi_time_average_list
-            # print averages_data
             averages_array = compile_averages_data(averages_data,[1,2,4,8,16,32,64,128,256,512])
-
             write_data(filename_averages,averages_array)

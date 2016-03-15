@@ -35,14 +35,6 @@ def aircraft_interval(t_next_aircraft,idnumber,ATC_list,aircraft_list,flight_arr
             create = True
     return t_next_aircraft,create,idnumber
 
-# def add_random_aircraft_at_rate(rate,idnumber,ATC_list,aircraft_list,runway_list,r,v_max,graph,t,dt):
-#     randNumber = random.random()
-#     if randNumber <= rate/float(60)/float(60)*dt:
-#         idnumber = create_aircraft(idnumber,ATC_list,aircraft_list,runway_list,r,v_max,graph,t,dt)
-#         return idnumber
-#     else:
-#         return False
-
 def check_if_gate_available(min_separaion,ATC_list,ATC_gate,graphDict):
     graph = graphDict['graph']
     source = ATC_gate
@@ -102,14 +94,6 @@ def create_aircraft(idnumber,ATC_list,aircraft_list,flight_array,runway_list,r,v
         # ATC_list[ATC_gate].add_plane(new_plane)
         new_plane.stop = 512
         new_plane.is_active = False
-    # # only plan operation to next atc, as there is only one path from the gate
-    # new_plane.atc_goal = ATC_list[ATC_gate].link[0][1]
-    #
-    # ATC_list[ATC_gate].plan_operation(new_plane,graph,t)
-    #
-    # new_plane.atc_goal = ATC_runway
-    # new_plane.heading = new_plane.heading+new_plane.op[0].par['turn_angle']
-    # new_plane.atc = [ATC_gate,new_plane.op[0].par['next_atc']]
 
     idnumber =  idnumber + 1
     return idnumber
