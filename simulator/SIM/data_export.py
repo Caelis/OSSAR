@@ -35,5 +35,6 @@ def compile_averages_data(averages_data,stop_type_list):
         thisRow.append(averages_data['plane_stops'][index])
         for stop_type in stop_type_list:
             thisRow.append(averages_data['stop_types'][index][str(stop_type)])
+        thisRow = thisRow+averages_data['origin_destination'][index]
         return_array.append(thisRow)
     return return_array

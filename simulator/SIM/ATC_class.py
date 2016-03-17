@@ -211,6 +211,7 @@ class ATC:
             self.runway.waiting_list.remove(plane.id)         # remove plane from waiting_list
             self.decrease_graph_density(graphDict,source_atc,target_atc,simulation_constants)
             plane.is_active = False
+            plane.stop = plane.stop | 1024
 
             #calculate the taxi time
             plane_taxi_time = t - plane.spawntime

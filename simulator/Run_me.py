@@ -25,7 +25,7 @@ from SIM.process_results import *
 Map = False# Activate or deactivate the map
 runs = 1                # number of runs
 # spawnrate = [1,20,40,60,80,100,120,140,160,180,200,220,240]       # rate [aircraft/hour] at which aircraft are added
-spawnrate = [1]
+spawnrate = [129]
 n_prop = [0]            # degree of propagation
 t_simulated = 3600      # simulation time [s]
 dt = 0.5              # timestep [s]
@@ -54,6 +54,7 @@ for i in range(len(spawnrate)):
     stop_type_list = []         # measurements
     taxi_time_average_list = [] # measurements
     n_stop_list = []            # measurements
+    origin_destination_list = []# measurements
     for j in range(len(n_prop)):
         n_runs = []
         
@@ -75,10 +76,10 @@ for i in range(len(spawnrate)):
             ## Write position data
             ############
             # filename_aircraft_pos = 'aircraftPos_' + str(spawnrate[i]) + '_' + str(trial) + '.csv'
-            filename_flights = 'flights_' + str(spawnrate[i]) + '_' + str(trial) + '.csv'
+            # filename_flights = 'flights_' + str(spawnrate[i]) + '_' + str(trial) + '.csv'
             # filename_edge_value = 'edgeValue_' + str(spawnrate[i]) + '_' + str(trial) + '.csv'
             # write_data(filename_aircraft_pos,position_array)
-            write_data(filename_flights,flights_array)
+            # write_data(filename_flights,flights_array)
             # write_data(filename_edge_value,edge_array)
 
             # append data of this run to measurements
@@ -88,6 +89,7 @@ for i in range(len(spawnrate)):
             # store the averages data
             taxi_time_average_list.append(taxi_time_average)
             n_stop_list.append(aircraft_accelerating)
+            origin_destination_list.append(accumulate_data(flights_array))
 
             looping = simulator_stop_criteria(v_average_list,taxi_time_average_list,n_stop_list,stop_type_list,trial,min_num_trials,marge,Za)
 
@@ -100,5 +102,6 @@ for i in range(len(spawnrate)):
             averages_data['stop_types'] = stop_type_list
             averages_data['plane_stops'] = n_stop_list
             averages_data['avg_taxi_time'] = taxi_time_average_list
-            averages_array = compile_averages_data(averages_data,[1,2,4,8,16,32,64,128,256,512])
+            averages_data['origin_destination'] = origin_destination_list
+            averages_array = compile_averages_data(averages_data,[1,2,4,8,16,32,64,128,256,512,1024])
             write_data(filename_averages,averages_array)

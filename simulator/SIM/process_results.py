@@ -26,7 +26,7 @@ def append_v_average_list(position_array,v_average_list):
 #appends the amount of stops per stop type for one simulation to stop_type_list
 def append_stop_type_list(stop_type_list,position_array): #,stop_criteria,trial,marge,Za):
     stop_types = {} #stop types for a single simulation
-    existing_stop_types = [1,2,4,8,16,32,64,128,256,512]
+    existing_stop_types = [1,2,4,8,16,32,64,128,256,512,1024]
     for option in existing_stop_types:
         stop_types[str(option)] = 0
     for x in xrange(len(position_array)):
@@ -42,3 +42,16 @@ def stop_types_loop(stop_type,stop_types,existing_stop_types):
         if (stop_type & option) > 0:
             stop_types[str(option)] = stop_types[str(option)] + 1
     return stop_types
+
+def accumulate_data(flights_array):
+    gatenum = 3
+    rwynum = 4
+    firstGateNum = 18
+    accumulated_list = [0]*(1+gatenum+rwynum)
+    for flight in flights_array:
+        # print flight[0]
+        accumulated_list[0] = flight[0]+1
+        accumulated_list[1+flight[2]] +=1
+        accumulated_list[1+gatenum+flight[3]-firstGateNum] +=1
+    # print accumulated_list
+    return accumulated_list

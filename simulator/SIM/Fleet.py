@@ -28,7 +28,7 @@ from data_import import data
 def aircraft_interval(t_next_aircraft,idnumber,ATC_list,aircraft_list,flight_array,runway_list,r,v_max,create,mean,std,graphDict,min_separation,t,dt):
     if create == True:
         idnumber = create_aircraft(idnumber,ATC_list,aircraft_list,flight_array,runway_list,r,v_max,graphDict,min_separation,t,dt)
-        t_next_aircraft = t + np.random.normal(mean,std)
+        t_next_aircraft = t_next_aircraft + np.random.normal(mean,std)
         create = False
     if create == False:
         if t_next_aircraft <= t:
