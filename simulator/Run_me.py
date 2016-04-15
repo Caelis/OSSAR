@@ -22,7 +22,7 @@ from SIM.simulator_stop_criteria import *
 from SIM.process_results import *
 
 '''Configuring the simulator'''
-Map = False# Activate or deactivate the map
+Map = True# Activate or deactivate the map
 runs = 1                # number of runs
 # spawnrate = [1,20,40,60,80,100,120,140,160,180,200,220,240]       # rate [aircraft/hour] at which aircraft are added
 spawnrate = [129]

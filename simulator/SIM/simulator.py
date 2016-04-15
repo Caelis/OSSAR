@@ -11,14 +11,14 @@ Input: Fleet package, ATC_class package, Map package
 from Fleet import *
 from ATC_class import ATC
 from ATC_class import create_ATC
-# from Map import *
+from Map import *
 from dijkstra_structure import *
 from runway_class import *
 
 #import python modules
-from numpy import *
+import numpy as np
 from math import *
-# import pygame as pg
+import pygame as pg
 import networkx as nx
 import copy
 
@@ -26,6 +26,7 @@ import copy
 from data_import import wpl_database
 from data_export import *
 def simrun(sim_params):
+
     t_sim = sim_params['t_sim']
     area = sim_params['area']
     dt = sim_params['dt']
@@ -103,6 +104,8 @@ def simrun(sim_params):
     position_array = []
     edges_array = []
     flights_array = []
+
+    np.random.seed()
     while running == True:
         # print 'Time is: ' + str(t)
         # time.sleep(5)

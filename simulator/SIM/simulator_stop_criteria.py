@@ -20,7 +20,7 @@ def simulator_stop_criteria(v_average_list,taxi_time_average_list,n_stop_list,st
         stop_criteria = check_plane_stop(stop_type_list,stop_criteria,trial,marge,Za,min_num_trials)
 
     #check if all stop criteria are true, if yes stop simulator, else continue
-    print stop_criteria
+    # print stop_criteria
     for criterion in stop_criteria:
         if not criterion:
             looping = True
